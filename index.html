@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JoneDep - Gerenciador de Dependências</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-container">
+    <div class="copy-modal" id="copy-modal">
+      <div class="copy-modal-content">
+        <div class="copy-icon">
+          <svg viewBox="0 0 24 24">
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg>
+        </div>
+        <span id="copy-modal-text">Copiado com sucesso!</span>
+      </div>
+    </div>
+    <header>
+      <div class="logo">
+        <img src="assets/jone-dep-logo.svg" alt="JoneDep Logo" class="logo-img" />
+      </div>
+    </header>
+
+    <div class="filters-container" id="filters-container">
+      <div class="filters-wrapper">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="filter-java">JAVA</label>
+            <select id="filter-java" class="filter-dropdown"><option value="">Todas</option></select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-kotlin">KOTLIN</label>
+            <select id="filter-kotlin" class="filter-dropdown"><option value="">Todas</option></select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-gradle">GRADLE</label>
+            <select id="filter-gradle" class="filter-dropdown"><option value="">Todas</option></select>
+          </div>
+          <div class="filter-group">
+            <label for="filter-spring">SPRING</label>
+            <select id="filter-spring" class="filter-dropdown"><option value="">Todas</option></select>
+          </div>
+          <button class="clear-filters-button" id="clear-filters-button" title="Limpar todos os filtros">
+            <svg class="icon" viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="search-container">
+      <input type="text" class="search-input" id="search-input" placeholder="Qual dependência desejar buscar?">
+    </div>
+
+    <button class="copy-all-button" id="copy-all-button">
+      <svg class="icon" viewBox="0 0 24 24">
+        <path d="M8 6H16M8 10H16M8 14H12"></path>
+        <path d="M3 17V7C3 5.89543 3.89543 5 5 5H19C20.1046 5 21 5.89543 21 7V17C21 18.1046 20.1046 19 19 19H5C3.89543 19 3 18.1046 3 17Z"></path>
+      </svg>
+      COPIAR LISTA COMPLETA
+    </button>
+
+    <div class="dependencies-grid" id="dependencies-grid">
+      <div class="loading">Carregando dependências...</div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
