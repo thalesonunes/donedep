@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="gradle-wrapper8">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/data/repo_cache/charge-redash-migration/gradle/wrapper/gradle-wrapper.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/card-payment-service/card-payment-service.iml" filepath="$PROJECT_DIR$/data/repo_cache/card-payment-service/card-payment-service.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/charge-consistency/charge-consistency.iml" filepath="$PROJECT_DIR$/data/repo_cache/charge-consistency/charge-consistency.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/charge-service/charge-service-api/charge-service-api.iml" filepath="$PROJECT_DIR$/data/repo_cache/charge-service/charge-service-api/charge-service-api.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/charge-service/charge-service-core/charge-service-core.iml" filepath="$PROJECT_DIR$/data/repo_cache/charge-service/charge-service-core/charge-service-core.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/digital-payments-avros/digital-payments-avros.iml" filepath="$PROJECT_DIR$/data/repo_cache/digital-payments-avros/digital-payments-avros.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/jone-dep.iml" filepath="$PROJECT_DIR$/.idea/jone-dep.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/kafka-avro-client/kafka-avro-client.iml" filepath="$PROJECT_DIR$/data/repo_cache/kafka-avro-client/kafka-avro-client.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/notification-service-lambda/tests/contract-tests/src/main/main.iml" filepath="$PROJECT_DIR$/data/repo_cache/notification-service-lambda/tests/contract-tests/src/main/main.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/digital-payments-logging/src/main/main2.iml" filepath="$PROJECT_DIR$/data/repo_cache/digital-payments-logging/src/main/main2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/charge/charge-rest/src/main/main3.iml" filepath="$PROJECT_DIR$/data/repo_cache/charge/charge-rest/src/main/main3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/card-tokenization-service/src/main/main4.iml" filepath="$PROJECT_DIR$/data/repo_cache/card-tokenization-service/src/main/main4.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/payment-stream/payment-stream.iml" filepath="$PROJECT_DIR$/data/repo_cache/payment-stream/payment-stream.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/repo_cache.iml" filepath="$PROJECT_DIR$/data/repo_cache/repo_cache.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/digital-payments-logging/src/test/test.iml" filepath="$PROJECT_DIR$/data/repo_cache/digital-payments-logging/src/test/test.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/card-tokenization-service/src/test/test2.iml" filepath="$PROJECT_DIR$/data/repo_cache/card-tokenization-service/src/test/test2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/charge/charge-rest/src/test/test3.iml" filepath="$PROJECT_DIR$/data/repo_cache/charge/charge-rest/src/test/test3.iml" />
+      <module fileurl="file://$PROJECT_DIR$/data/repo_cache/notification-service-lambda/tests/contract-tests/src/test/test4.iml" filepath="$PROJECT_DIR$/data/repo_cache/notification-service-lambda/tests/contract-tests/src/test/test4.iml" />
+    </modules>
+  </component>
+</project>

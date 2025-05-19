@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="VcsDirectoryMappings">
+    <mapping directory="" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/batseguro" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/card-payment-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/card-tokenization-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-consistency" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-data-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-dockerized" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-e2e-tests" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-redash-migration" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/charge-service" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/core-payments-monitoring" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/digital-payments-api-gateway" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/digital-payments-avros" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/digital-payments-logging" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/docker-images" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/kafka-avro-client" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/marie-charge" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/notification-service-lambda" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/payment-stream" vcs="Git" />
+    <mapping directory="$PROJECT_DIR$/data/repo_cache/security-token-e2e-tests" vcs="Git" />
+  </component>
+</project>

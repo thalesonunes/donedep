@@ -1,0 +1,31 @@
+# Ignorar diretório de cache de repositórios
+data/repo_cache/
+
+# Arquivos de dados e logs
+data/dependencies.json.formatted
+data/*.json.raw
+data/*.json.bak
+data/*.log
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.swp
+*~
+*.bak
+*.old
+*.original
+*.backup
+*.simple
+*.log
+.last_install
+.raw
+
+# Node.js
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db

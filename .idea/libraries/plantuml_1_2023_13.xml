@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="plantuml-1.2023.13">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/data/repo_cache/payment-stream/docs/jar/plantuml-1.2023.13.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

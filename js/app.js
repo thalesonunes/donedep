@@ -20,10 +20,24 @@ function getUnique(projects, key) {
     return [];
   }
   
+  // Safe accessor function to get requirements value with error handling
+  const safeGetRequirement = (project, key) => {
+    try {
+      // Verifica se o projeto e requirements existem
+      if (!project || !project.requirements) {
+        return null;
+      }
+      return project.requirements[key];
+    } catch (e) {
+      console.error(`Error accessing requirement '${key}' for project:`, project, e);
+      return null;
+    }
+  };
+  
   // Tratamento especial para Kotlin - incluir valores null como "Nenhum"
   if (key === 'kotlin') {
     const values = projects.map(p => {
-      const value = p.requirements && p.requirements[key];
+      const value = safeGetRequirement(p, key);
       // Se o valor for null ou undefined e estivermos buscando por Kotlin, retornamos um valor especial
       if (value === null || value === undefined) {
         return 'Nenhum';
@@ -34,7 +48,7 @@ function getUnique(projects, key) {
   }
   
   // Para outros campos, apenas extraímos valores únicos não nulos
-  return Array.from(new Set(projects.map(p => p.requirements && p.requirements[key]).filter(Boolean))).sort();
+  return Array.from(new Set(projects.map(p => safeGetRequirement(p, key)).filter(Boolean))).sort();
 }
 
 function fillDropdown(id, values, selectedValue) {
@@ -186,38 +200,68 @@ function showCopyModal(message) {
 // Função principal para carregar as dependências
 async function loadDependencies() {
   try {
+    console.log('Iniciando carregamento de dependências de:', jsonPath);
+    
     const response = await fetch(jsonPath + '?v=' + Date.now());
+    
     if (!response.ok) {
-      throw new Error('Falha ao carregar o arquivo JSON');
+      throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
     }
+    
     const data = await response.json();
+    
+    // Validar e processar os dados recebidos
     if (Array.isArray(data)) {
       allDependencies = data;
-    } else if (data.dependencies) {
+      console.log(`Carregadas ${allDependencies.length} projetos com sucesso`);
+    } else if (data && typeof data === 'object' && data.dependencies) {
+      // Caso seja um objeto individual, converte para array
       allDependencies = [data];
+      console.log('Carregado 1 projeto com sucesso (formato objeto)');
     } else {
+      console.error('Formato de dados inválido');
       throw new Error('Formato de dados inválido');
     }
+    
+    // Verificação adicional para garantir que requirements existe
+    allDependencies = allDependencies.map(project => {
+      if (!project.requirements) {
+        console.warn(`Projeto ${project.project || 'desconhecido'} não tem objeto requirements. Criando um objeto vazio.`);
+        project.requirements = {
+          java: null,
+          kotlin: null,
+          gradle: null,
+          spring_boot: null
+        };
+      }
+      return project;
+    });
+    
     initializeFilters();
     renderDependencies();
     setupEventListeners();
   } catch (error) {
     dependenciesGrid.innerHTML = `<div class="error">Erro ao carregar dependências: ${error.message}</div>`;
-    console.error('Erro:', error);
+    console.error('Erro ao carregar dependências:', error);
   }
 }
 function initializeFilters() {
   // Coletar todos os projetos e suas combinações
   window._allProjects = allDependencies;
   
-  // Filtrar projetos que não têm dependências
-  window._allProjects = window._allProjects.filter(p => p.dependencies && p.dependencies.length > 0);
+  // Mostrar todos os projetos, mesmo que não tenham dependências
+  // Isso é útil para visualizar as tecnologias usadas mesmo sem dependências
   
   // Inicializar os dropdowns com as opções válidas
   updateAllDropdowns();
   
   // Debug: exibir relações entre filtros no console
   debugFilterRelationships();
+  
+  // Aviso se não houver dependências
+  if (!window._allProjects.some(p => p.dependencies && p.dependencies.length > 0)) {
+    console.warn("Nenhum projeto tem dependências. Verifique a extração.");
+  }
 }
 
 function updateAllDropdowns() {
@@ -231,8 +275,23 @@ function updateAllDropdowns() {
   
   console.log("Atualizando dropdowns com seleções:", selected);
   
-  // Filtrar projetos com base nas seleções atuais
-  let filteredProjects = [...window._allProjects].filter(p => p.dependencies && p.dependencies.length > 0);
+  // Garantir que todos os projetos tenham o objeto requirements
+  if (window._allProjects) {
+    window._allProjects.forEach(project => {
+      if (!project.requirements) {
+        console.warn(`Projeto ${project.project || 'sem nome'} não tem requisitos definidos. Criando objeto vazio.`);
+        project.requirements = {
+          java: null,
+          kotlin: null,
+          gradle: null,
+          spring_boot: null
+        };
+      }
+    });
+  }
+  
+  // Não filtrar projetos sem dependências, vamos usar todos os projetos
+  let filteredProjects = [...(window._allProjects || [])];
   
   // Aplicar os filtros selecionados
   Object.entries(selected).forEach(([key, value]) => {
@@ -242,11 +301,11 @@ function updateAllDropdowns() {
       // Tratamento especial para o valor "Nenhum" do Kotlin
       if (key === 'kotlin' && value === 'Nenhum') {
         filteredProjects = filteredProjects.filter(p => 
-          p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
+          p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
         );
       } else {
         filteredProjects = filteredProjects.filter(p => 
-          p.requirements && p.requirements[key] === value
+          p && p.requirements && p.requirements[key] === value
         );
       }
     }
@@ -294,7 +353,17 @@ function debugFilterRelationships() {
   // Dados de cada projeto
   console.log("%cDados dos projetos carregados:", "font-weight:bold");
   window._allProjects.forEach(p => {
-    console.log(`Projeto: ${p.project}, Java: ${p.requirements.java}, Gradle: ${p.requirements.gradle}, Kotlin: ${p.requirements.kotlin}, Spring: ${p.requirements.spring_boot}`);
+    try {
+      if (p && p.requirements) {
+        console.log(`Projeto: ${p.project || 'Sem nome'}, Java: ${p.requirements.java || 'N/A'}, Gradle: ${p.requirements.gradle || 'N/A'}, Kotlin: ${p.requirements.kotlin || 'N/A'}, Spring: ${p.requirements.spring_boot || 'N/A'}`);
+      } else if (p) {
+        console.log(`Projeto: ${p.project || 'Sem nome'}, sem requisitos definidos`);
+      } else {
+        console.log('Projeto inválido encontrado');
+      }
+    } catch (e) {
+      console.error('Erro ao mostrar informações do projeto:', e);
+    }
   });
   
   // Ver quais versões de Gradle existem para cada versão de Java
@@ -340,8 +409,23 @@ function getCompatibleOptions(filterToUpdate, currentSelections) {
   const simulatedSelections = {...currentSelections};
   simulatedSelections[filterToUpdate] = null;
   
-  // Filtra projetos com base nas seleções simuladas (todos os filtros exceto o que estamos atualizando)
-  let filteredProjects = [...window._allProjects].filter(p => p.dependencies && p.dependencies.length > 0);
+  // Usar todos os projetos, não apenas os que têm dependências
+  let filteredProjects = [...window._allProjects];
+  
+  // Verificar se os projetos têm a estrutura requirements
+  filteredProjects = filteredProjects.filter(p => p && typeof p === 'object');
+  
+  // Garantir que todos os projetos têm um objeto requirements
+  filteredProjects.forEach(p => {
+    if (!p.requirements) {
+      p.requirements = {
+        java: null,
+        kotlin: null,
+        gradle: null,
+        spring_boot: null
+      };
+    }
+  });
   
   // Aplica os filtros das seleções simuladas
   Object.entries(simulatedSelections).forEach(([key, value]) => {
@@ -465,6 +549,10 @@ function renderDependencies() {
     if (activeFilterLabels.length > 0) {
       message += '<br><span class="filter-info">Filtros ativos: ' + activeFilterLabels.join(', ') + '</span>';
       message += '<br><span class="filter-tip">Tente uma combinação diferente ou limpe os filtros.</span>';
+    } else {
+      // Se não há filtros ativos mas ainda não tem dependências, é provável que o script não extraiu corretamente
+      message += '<br><span class="filter-info">Nenhuma dependência foi encontrada em nenhum projeto.</span>';
+      message += '<br><span class="filter-tip">Verifique se o script de extração está configurado corretamente.</span>';
     }
     
     dependenciesGrid.innerHTML = `<div class="no-results">${message}</div>`;
@@ -503,51 +591,105 @@ function renderDependencies() {
   });
 }
 function getFilteredDependencies() {
+  console.log("Obtendo dependências filtradas...");
+  
   // Coletar todas as dependências de todos os projetos
   let allDeps = [];
   let anyFilterActive = Object.values(activeFilters).some(v => v);
-  // Usar window._allProjects que já foi filtrado para conter apenas projetos com dependências
-  const projects = window._allProjects;
   
-  projects.forEach(project => {
-    // Verificar se o projeto passa pelos filtros ativos
-    let passesFilters = true;
-    for (const [filterType, filterValue] of Object.entries(activeFilters)) {
-      if (filterValue) {
-        // Tratamento especial para o valor "Nenhum" do Kotlin
-        if (filterType === 'kotlin' && filterValue === 'Nenhum') {
-          // Verifica se o projeto NÃO tem o valor de Kotlin (ou seja, é null ou undefined)
-          if (project.requirements && project.requirements[filterType] !== null && project.requirements[filterType] !== undefined) {
+  try {
+    // Usar window._allProjects que já foi filtrado para conter apenas projetos com dependências
+    const projects = window._allProjects || [];
+    
+    // Primeiro verificar se todos os projetos têm a estrutura requirements
+    projects.forEach((project, index) => {
+      if (!project) {
+        console.warn(`Projeto na posição ${index} é null ou undefined`);
+        return;
+      }
+      
+      if (!project.requirements) {
+        console.warn(`Projeto ${project.project || 'sem nome'} não tem requisitos definidos`);
+        project.requirements = {
+          java: null,
+          kotlin: null,
+          gradle: null,
+          spring_boot: null
+        };
+      }
+    });
+    
+    // Processar projetos para filtros
+    projects.forEach(project => {
+      if (!project) return;
+      
+      // Verificar se o projeto passa pelos filtros ativos
+      let passesFilters = true;
+      for (const [filterType, filterValue] of Object.entries(activeFilters)) {
+        if (filterValue) {
+          // Tratamento especial para o valor "Nenhum" do Kotlin
+          if (filterType === 'kotlin' && filterValue === 'Nenhum') {
+            // Verifica se o projeto NÃO tem o valor de Kotlin (ou seja, é null ou undefined)
+            if (project.requirements && project.requirements[filterType] !== null && project.requirements[filterType] !== undefined) {
+              passesFilters = false;
+              break;
+            }
+          } else if (!project.requirements || project.requirements[filterType] !== filterValue) {
             passesFilters = false;
             break;
           }
-        } else if (project.requirements && project.requirements[filterType] !== filterValue) {
-          passesFilters = false;
-          break;
         }
       }
-    }
-    if (passesFilters && project.dependencies) {
-      allDeps = allDeps.concat(project.dependencies);
-    }
-  });
-  
-  // Se nenhum filtro estiver ativo, mostrar todas as dependências de todos os projetos
-  if (!anyFilterActive) {
-    allDeps = [];
-    projects.forEach(project => {
-      if (project.dependencies) allDeps = allDeps.concat(project.dependencies);
+      
+      if (passesFilters) {
+        // Verificar se o projeto tem dependências válidas
+        if (Array.isArray(project.dependencies)) {
+          allDeps = allDeps.concat(project.dependencies);
+        } else if (project.dependencies) {
+          console.warn(`Projeto ${project.project} tem dependências no formato inválido:`, project.dependencies);
+        }
+      }
     });
+    
+    console.log(`Encontradas ${allDeps.length} dependências antes da filtragem`);
+    
+    // Se nenhum filtro estiver ativo, mostrar todas as dependências de todos os projetos
+    if (!anyFilterActive) {
+      allDeps = [];
+      projects.forEach(project => {
+        if (project && Array.isArray(project.dependencies)) {
+          allDeps = allDeps.concat(project.dependencies);
+        }
+      });
+    }
+    
+    // Filtrar dependências válidas (com group e name)
+    const validDeps = allDeps.filter(dep => dep && typeof dep === 'object' && dep.group && dep.name);
+    if (validDeps.length < allDeps.length) {
+      console.warn(`Removidas ${allDeps.length - validDeps.length} dependências inválidas`);
+    }
+    allDeps = validDeps;
+    
+    // Aplicar filtro de busca
+    if (searchTerm) {
+      const beforeSearchCount = allDeps.length;
+      allDeps = allDeps.filter(dep => {
+        try {
+          return dep.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                dep.group.toLowerCase().includes(searchTerm.toLowerCase());
+        } catch (e) {
+          console.error("Erro ao filtrar dependência por termo de busca:", e, dep);
+          return false;
+        }
+      });
+      console.log(`Filtro de busca '${searchTerm}' reduziu de ${beforeSearchCount} para ${allDeps.length} dependências`);
+    }
+  } catch (error) {
+    console.error("Erro ao processar dependências:", error);
+    allDeps = [];
   }
-  // Corrige: filtrar dependências válidas (com group e name)
-  allDeps = allDeps.filter(dep => dep && dep.group && dep.name);
-  // Aplicar filtro de busca
-  if (searchTerm) {
-    allDeps = allDeps.filter(dep => 
-      dep.name.toLowerCase().includes(searchTerm) || 
-      dep.group.toLowerCase().includes(searchTerm)
-    );
-  }
+  
+  console.log(`Retornando ${allDeps.length} dependências filtradas`);
   return allDeps;
 }
 // Inicializar a aplicação

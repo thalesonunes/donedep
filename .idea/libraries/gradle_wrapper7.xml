@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="gradle-wrapper7">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/data/repo_cache/card-payment-service/load-testing/gradle/wrapper/gradle-wrapper.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
