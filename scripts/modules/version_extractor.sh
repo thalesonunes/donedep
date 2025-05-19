@@ -24,11 +24,14 @@ extract_java_version() {
   for gradle_file in "${gradle_files[@]}"; do
     if [ -f "$gradle_file" ]; then
       # Procurar padrões de definição de versão Java em Gradle
-      if grep -q "sourceCompatibility\s*=\s*['\"]\?1\.[0-9]" "$gradle_file"; then
-        java_version=$(grep -oP "sourceCompatibility\s*=\s*['\"]\?\K1\.[0-9]+" "$gradle_file" | head -1)
-      elif grep -q "sourceCompatibility\s*=\s*['\"]\?[0-9]" "$gradle_file"; then
-        java_version=$(grep -oP "sourceCompatibility\s*=\s*['\"]\?\K[0-9]+" "$gradle_file" | head -1)
-      elif grep -q "JavaVersion\.[A-Z_0-9]+" "$gradle_file"; then
+      # Buscar declaração de compatibilidade Java, usando cat para evitar problemas com grep
+      if cat "$gradle_file" | grep -q "sourceCompatibility.*1\."; then
+        java_version=$(cat "$gradle_file" | grep "sourceCompatibility.*1\." | sed -E 's/.*sourceCompatibility.*=.*1\.([0-9]+).*/1.\1/g' | head -1)
+        echo "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
+      elif cat "$gradle_file" | grep -q "sourceCompatibility.*[0-9]"; then 
+        java_version=$(cat "$gradle_file" | grep "sourceCompatibility.*[0-9]" | sed -E 's/.*sourceCompatibility.*=.*([0-9]+).*/\1/g' | head -1)
+        echo "Encontrado sourceCompatibility número em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
+      elif grep -q "JavaVersion\\.[A-Z_0-9]+" "$gradle_file"; then
         local java_enum=$(grep -oP "JavaVersion\.\K[A-Z_0-9]+" "$gradle_file" | head -1)
         # Converter enum para número
         case "$java_enum" in
@@ -81,6 +84,13 @@ extract_java_version() {
     done
   fi
 
+  # Depurar - registrar versão final encontrada
+  if [ -n "$java_version" ]; then
+    echo "Versão Java final extraída: $java_version" >> "$LOG_FILE" 2>&1
+  else
+    echo "Nenhuma versão Java encontrada para: $project_dir" >> "$LOG_FILE" 2>&1
+  fi
+  
   echo "$java_version"
 }
 

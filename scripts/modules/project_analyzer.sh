@@ -165,6 +165,8 @@ analyze_project() {
   # Adicionar versões se disponíveis
   if [ -n "$java_version" ]; then
     project_json="$project_json,\"javaVersion\":\"$java_version\""
+    # Adicionar ao log para depuração
+    echo "Adicionada javaVersion=$java_version para projeto $project_name" >> "$LOG_FILE" 2>&1
   fi
   
   if [ -n "$kotlin_version" ]; then
