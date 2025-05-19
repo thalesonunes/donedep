@@ -210,6 +210,12 @@ async function loadDependencies() {
     
     const data = await response.json();
     
+    // Verificar se temos um erro retornado pelo adaptador de dados
+    if (data && data.error === true) {
+      console.error('Erro retornado pelo adaptador de dados:', data.message);
+      throw new Error(data.message || 'Erro ao processar dependências');
+    }
+    
     // Validar e processar os dados recebidos
     if (Array.isArray(data)) {
       allDependencies = data;
@@ -241,7 +247,19 @@ async function loadDependencies() {
     renderDependencies();
     setupEventListeners();
   } catch (error) {
-    dependenciesGrid.innerHTML = `<div class="error">Erro ao carregar dependências: ${error.message}</div>`;
+    // Exibir mensagem de erro mais detalhada na interface
+    const errorHtml = `
+      <div class="error-container">
+        <div class="error-title">Erro ao carregar dependências</div>
+        <div class="error-message">${error.message}</div>
+        ${error.suggestion ? `<div class="error-suggestion">${error.suggestion}</div>` : ''}
+        <div class="error-action">
+          <button class="retry-button" onclick="location.reload()">Tentar Novamente</button>
+        </div>
+      </div>
+    `;
+    
+    dependenciesGrid.innerHTML = errorHtml;
     console.error('Erro ao carregar dependências:', error);
   }
 }
@@ -566,14 +584,25 @@ function renderDependencies() {
     // Simplificado: usar sempre o campo declaration
     const copyDeclaration = dep.declaration;
     
-    // Sem formatação especial para variáveis, já que não temos mais essa informação
-    const versionClass = 'version';
+    // Verificar se tem variável não resolvida
+    const versionClass = dep.hasUnresolvedVariable ? 'version version-warning' : 'version';
+    
+    // Preparar conteúdo adicional para variáveis não resolvidas
+    let warningInfo = '';
+    if (dep.hasUnresolvedVariable) {
+      warningInfo = `<div class="variable-warning">
+        <span class="warning-icon">⚠️</span> 
+        <span class="warning-text">Variável não resolvida</span>
+        <span class="original-version" title="Versão original: ${dep.originalVersion}">ℹ️</span>
+      </div>`;
+    }
     
     card.innerHTML = `
       <div class="dependency-group">${dep.group}</div>
       <div class="dependency-name">${dep.name}</div>
       <div class="dependency-version">
         <span class="${versionClass}">${dep.version}</span>
+        ${warningInfo}
         <button class="copy-button" data-declaration="${escapeHTML(copyDeclaration)}">
           <svg class="icon" viewBox="0 0 24 24">
             <path d="M8 4V16C8 17.1 8.9 18 10 18H18C19.1 18 20 17.1 20 16V7.4L16.6 4H10C8.9 4 8 4.9 8 6"></path>

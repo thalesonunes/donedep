@@ -218,8 +218,8 @@ Abra a interface web:
 Ou manualmente:
 
 ```bash
-python3 -m http.server 8000
-# Acesse http://localhost:8000 no navegador
+python3 -m http.server 9786
+# Acesse http://localhost:9786 no navegador
 ```
 
 ### Verificação do Sistema

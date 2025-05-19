@@ -77,7 +77,7 @@ extract_dependencies() {
 
 # Função para abrir interface de visualização
 open_viewer() {
-  log "Abrindo interface de visualização..."
+  log "Iniciando servidor para interface de visualização..."
   
   # Verificar se o arquivo index.html existe
   if [ ! -f "./index.html" ]; then
@@ -91,16 +91,50 @@ open_viewer() {
     warning "Execute '$0 extract' primeiro para gerar os dados."
   fi
   
-  # Abrir no navegador padrão
-  if command -v xdg-open &> /dev/null; then
-    xdg-open "./index.html"
-  elif command -v open &> /dev/null; then
-    open "./index.html"
-  elif command -v start &> /dev/null; then
-    start "./index.html"
+  # Verificar se Python está instalado
+  if ! command -v python3 &> /dev/null && ! command -v python &> /dev/null; then
+    error "Python não encontrado. Instale o Python para iniciar o servidor."
+    exit 1
+  fi
+  
+  # Definir a porta
+  PORT=9786
+  
+  # Verificar se a porta está em uso
+  if command -v lsof &> /dev/null; then
+    if lsof -Pi :$PORT -sTCP:LISTEN -t &> /dev/null; then
+      warning "A porta $PORT já está em uso. Tentando usar outra porta..."
+      PORT=9787
+      if lsof -Pi :$PORT -sTCP:LISTEN -t &> /dev/null; then
+        error "As portas 9786 e 9787 estão em uso. Por favor, libere uma dessas portas e tente novamente."
+        exit 1
+      fi
+    fi
+  fi
+  
+  # Iniciar o servidor HTTP com Python
+  log "Iniciando servidor HTTP na porta $PORT..."
+  log "Para encerrar o servidor, pressione Ctrl+C"
+  log "A interface estará disponível em http://localhost:$PORT"
+  
+  # Abrir o navegador automaticamente após um pequeno atraso para dar tempo de iniciar o servidor
+  (sleep 2 && (xdg-open "http://localhost:$PORT" || open "http://localhost:$PORT" || start "http://localhost:$PORT")) &
+  
+  # Iniciar o servidor Python
+  if command -v python3 &> /dev/null; then
+    python3 -m http.server $PORT
+  elif command -v python &> /dev/null; then
+    # Verificar a versão do Python
+    PYTHON_VERSION=$(python --version 2>&1 | cut -d' ' -f2 | cut -d'.' -f1)
+    if [ "$PYTHON_VERSION" = "3" ]; then
+      python -m http.server $PORT
+    else
+      python -m SimpleHTTPServer $PORT
+    fi
   else
-    error "Não foi possível abrir o navegador automaticamente."
-    log "Por favor, abra manualmente o arquivo: $SCRIPT_DIR/index.html"
+    error "Não foi possível iniciar o servidor HTTP."
+    log "Por favor, execute manualmente: python3 -m http.server 9786"
+    log "E depois acesse: http://localhost:9786 no seu navegador"
   fi
 }
 

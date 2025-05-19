@@ -100,8 +100,20 @@ analyze_project() {
   local gradle_version=$(extract_gradle_version "$project_dir" 2>/dev/null)
   local spring_boot_version=$(extract_spring_boot_version "$project_dir" 2>/dev/null)
   
+  # Criar contexto do projeto como JSON para resolver variáveis
+  local project_context="{}"
+  if [ -n "$java_version" ] || [ -n "$kotlin_version" ] || [ -n "$gradle_version" ] || [ -n "$spring_boot_version" ]; then
+    project_context="{"
+    [ -n "$java_version" ] && project_context="$project_context\"javaVersion\":\"$java_version\","
+    [ -n "$kotlin_version" ] && project_context="$project_context\"kotlinVersion\":\"$kotlin_version\","
+    [ -n "$gradle_version" ] && project_context="$project_context\"gradleVersion\":\"$gradle_version\","
+    [ -n "$spring_boot_version" ] && project_context="$project_context\"springBootVersion\":\"$spring_boot_version\""
+    project_context="${project_context%,}" # remover última vírgula se existir
+    project_context="$project_context}"
+  fi
+  
   # Extrair dependências - redirecionando todo output para o log
-  local dependencies_json=$(extract_dependencies "$project_dir" 2>/dev/null)
+  local dependencies_json=$(extract_dependencies "$project_dir" "$project_context" 2>/dev/null)
   
   # Garantir que dependencies_json é um array JSON válido
   if [[ ! "$dependencies_json" == \[*\] ]]; then
