@@ -23,7 +23,28 @@ extract_java_version() {
   # Procurar em build.gradle e build.gradle.kts
   for gradle_file in "${gradle_files[@]}"; do
     if [ -f "$gradle_file" ]; then
-      # Procurar padrões de definição de versão Java em Gradle
+      # Verificar formato específico kotlin DSL: java.sourceCompatibility = JavaVersion.VERSION_XX
+      if grep -q "java\.sourceCompatibility.*JavaVersion" "$gradle_file"; then
+        echo "Encontrado formato kotlin DSL java.sourceCompatibility em $gradle_file" >> "$LOG_FILE" 2>&1
+        
+        # Extrair a versão do JavaVersion enum (simplificado)
+        if grep -q "VERSION_[0-9]" "$gradle_file"; then
+          local java_enum=$(grep -oP "VERSION_\K[0-9]+" "$gradle_file" | head -1)
+          java_version="$java_enum"
+          echo "Extraído número da versão do java.sourceCompatibility: $java_version" >> "$LOG_FILE" 2>&1
+        elif grep -q "VERSION_1_[0-9]" "$gradle_file"; then
+          local java_enum=$(grep -oP "VERSION_1_\K[0-9]+" "$gradle_file" | head -1)
+          java_version="1.$java_enum"
+          echo "Extraído número da versão 1.x do java.sourceCompatibility: $java_version" >> "$LOG_FILE" 2>&1
+        fi
+        
+        # Se encontrou versão, continue para o próximo passo
+        if [ -n "$java_version" ]; then
+          break  # Sair do loop, versão encontrada
+        fi
+      fi
+      
+      # Procurar padrões tradicionais de definição de versão Java em Gradle
       # Buscar declaração de compatibilidade Java, usando cat para evitar problemas com grep
       if cat "$gradle_file" | grep -q "sourceCompatibility.*1\."; then
         java_version=$(cat "$gradle_file" | grep "sourceCompatibility.*1\." | sed -E 's/.*sourceCompatibility.*=.*1\.([0-9]+).*/1.\1/g' | head -1)
@@ -33,13 +54,37 @@ extract_java_version() {
         echo "Encontrado sourceCompatibility número em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
       elif grep -q "JavaVersion\\.[A-Z_0-9]+" "$gradle_file"; then
         local java_enum=$(grep -oP "JavaVersion\.\K[A-Z_0-9]+" "$gradle_file" | head -1)
+        echo "Encontrado JavaVersion enum em $gradle_file: $java_enum" >> "$LOG_FILE" 2>&1
         # Converter enum para número
         case "$java_enum" in
           VERSION_1_8) java_version="1.8" ;;
           VERSION_11) java_version="11" ;;
           VERSION_17) java_version="17" ;;
           VERSION_21) java_version="21" ;;
-          *) java_version="" ;;
+          VERSION_1_6) java_version="1.6" ;;
+          VERSION_1_7) java_version="1.7" ;;
+          VERSION_1_9) java_version="1.9" ;;
+          VERSION_1_10) java_version="1.10" ;;
+          VERSION_12) java_version="12" ;;
+          VERSION_13) java_version="13" ;;
+          VERSION_14) java_version="14" ;;
+          VERSION_15) java_version="15" ;;
+          VERSION_16) java_version="16" ;;
+          VERSION_18) java_version="18" ;;
+          VERSION_19) java_version="19" ;;
+          VERSION_20) java_version="20" ;;
+          *) 
+            # Se não encontrou nas conversões, tentar extrair o número diretamente
+            if [[ "$java_enum" =~ VERSION_([0-9]+) ]]; then
+              java_version="${BASH_REMATCH[1]}"
+              echo "Extraído número da versão do enum: $java_version" >> "$LOG_FILE" 2>&1
+            elif [[ "$java_enum" =~ VERSION_1_([0-9]+) ]]; then
+              java_version="1.${BASH_REMATCH[1]}"
+              echo "Extraído número da versão 1.x do enum: $java_version" >> "$LOG_FILE" 2>&1
+            else
+              java_version=""
+            fi
+            ;;
         esac
       elif grep -q "java\s*{" "$gradle_file" && grep -q "toolchain\s*{" "$gradle_file"; then
         # Buscar em blocos java { toolchain { languageVersion.set(JavaLanguageVersion.of(XX)) } }
