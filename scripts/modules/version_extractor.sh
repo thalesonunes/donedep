@@ -20,6 +20,18 @@ extract_java_version() {
   
   echo "DEBUG: Extraindo Java version do projeto $(basename "$project_dir")" > /tmp/java_debug.log
   
+  # Verificar diretamente por padrões específicos que sabemos existir
+  # Verificar primeiro o padrão [compileKotlin, compileTestKotlin]*.kotlinOptions { jvmTarget = "1.8" }
+  if [ -f "$project_dir/build.gradle" ] && grep -q "\[compileKotlin" "$project_dir/build.gradle"; then
+    local version_str=$(grep -A 5 "\[compileKotlin" "$project_dir/build.gradle" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9.]+")
+    if [ -n "$version_str" ]; then
+      java_version="$version_str"
+      echo "DEBUG: Encontrado padrão [compileKotlin] diretamente, versão: $java_version" >> /tmp/java_debug.log
+      echo "$java_version"
+      return 0
+    fi
+  fi
+  
   # Buscar em arquivos Gradle
   local gradle_files=(
     "$project_dir/build.gradle"
@@ -150,6 +162,32 @@ extract_java_version() {
             java_version="$version_num"
             echo "Extraído número da versão do jvmTarget em tasks.withType<KotlinCompile>: $java_version" >> "$LOG_FILE" 2>&1
             echo "DEBUG: Extraído Java versão $java_version do jvmTarget em $gradle_file" >> /tmp/java_debug.log
+          fi
+        fi
+      # Verificar padrão Groovy para compileKotlin kotlinOptions com jvmTarget
+      elif grep -q "compileKotlin" "$gradle_file" && grep -q "kotlinOptions" "$gradle_file" && grep -q "jvmTarget" "$gradle_file"; then
+        echo "Encontrado padrão com compileKotlin e kotlinOptions em $gradle_file" >> "$LOG_FILE" 2>&1
+        
+        # Verificar especificamente pelo padrão [compileKotlin, compileTestKotlin]*.kotlinOptions
+        if grep -q "\[compileKotlin" "$gradle_file"; then
+          echo "Encontrado padrão [compileKotlin... no arquivo $gradle_file" >> "$LOG_FILE" 2>&1
+          
+          # Extrair diretamente a versão do jvmTarget
+          local version_str=$(grep -A 5 "\[compileKotlin" "$gradle_file" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9.]+")
+          
+          if [ -n "$version_str" ]; then
+            java_version="$version_str"
+            echo "Extraído número da versão do jvmTarget com [compileKotlin: $java_version" >> "$LOG_FILE" 2>&1
+            echo "DEBUG: Extraído Java versão $java_version do jvmTarget em $gradle_file" >> /tmp/java_debug.log
+          fi
+        # Verificar outros padrões de compileKotlin
+        else
+          # Usar grep direto para tentar outros padrões
+          local version_str=$(grep -A 5 "compileKotlin.*kotlinOptions" "$gradle_file" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9.]+" | head -1)
+          
+          if [ -n "$version_str" ]; then
+            java_version="$version_str"
+            echo "Extraído número da versão do jvmTarget de outro padrão compileKotlin: $java_version" >> "$LOG_FILE" 2>&1
           fi
         fi
       elif grep -q "JavaVersion\\.[A-Z_0-9]+" "$gradle_file"; then
