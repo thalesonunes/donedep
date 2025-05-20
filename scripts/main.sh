@@ -230,6 +230,18 @@ main() {
     log "Versão formatada do JSON salva em: ${JSON_FILE}.formatted" >> "$LOG_FILE"
   fi
   
+  # Limpeza de arquivos temporários
+  log "Removendo arquivos temporários..." | tee -a "$LOG_FILE"
+  if [ -f "${JSON_FILE}.raw" ]; then
+    rm -f "${JSON_FILE}.raw"
+    log "Arquivo ${JSON_FILE}.raw removido." >> "$LOG_FILE"
+  fi
+  
+  if [ -f "${JSON_FILE}.formatted" ]; then
+    rm -f "${JSON_FILE}.formatted"
+    log "Arquivo ${JSON_FILE}.formatted removido." >> "$LOG_FILE"
+  fi
+  
   success "Análise concluída. Resultado salvo em: $JSON_FILE" | tee -a "$LOG_FILE"
   log "Log detalhado disponível em: $LOG_FILE"
   return 0
