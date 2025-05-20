@@ -117,7 +117,7 @@ analyze_project() {
   
   # Garantir que dependencies_json é um array JSON válido
   if [[ ! "$dependencies_json" == \[*\] ]]; then
-    echo "Formato inválido de array dependencies_json: $dependencies_json" >> "$LOG_FILE" 2>&1
+    debug_log "Formato inválido de array dependencies_json: $dependencies_json"
     dependencies_json="[]"
   fi
   
@@ -131,7 +131,7 @@ analyze_project() {
     
     # Processar cada módulo se necessário
     if [ "$modules_json" != "[]" ]; then
-      echo "Processando módulos do projeto $project_name" >> "$LOG_FILE" 2>&1
+      debug_log "Processando módulos do projeto $project_name"
       
       # Iniciar array de projetos de módulos
       local modules_projects="[]"
@@ -153,7 +153,7 @@ analyze_project() {
       
       # Se há projetos de módulos, combinar com o projeto principal
       if [ "$modules_projects" != "[]" ]; then
-        echo "Módulos encontrados e analisados: $modules_projects" >> "$LOG_FILE" 2>&1
+        debug_log "Módulos encontrados e analisados: $modules_projects"
       fi
     fi
   fi
@@ -166,7 +166,7 @@ analyze_project() {
   if [ -n "$java_version" ]; then
     project_json="$project_json,\"javaVersion\":\"$java_version\""
     # Adicionar ao log para depuração
-    echo "Adicionada javaVersion=$java_version para projeto $project_name" >> "$LOG_FILE" 2>&1
+    debug_log "Adicionada javaVersion=$java_version para projeto $project_name"
   fi
   
   if [ -n "$kotlin_version" ]; then

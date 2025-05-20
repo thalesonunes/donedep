@@ -18,7 +18,7 @@ extract_java_version() {
   local project_dir="$1"
   local java_version=""
   
-  echo "DEBUG: Extraindo Java version do projeto $(basename "$project_dir")" > /tmp/java_debug.log
+  debug_log "Extraindo Java version do projeto $(basename "$project_dir")"
   
   # Verificar diretamente por padrões específicos que sabemos existir
   # Verificar primeiro o padrão [compileKotlin, compileTestKotlin]*.kotlinOptions { jvmTarget = "1.8" }
@@ -26,7 +26,7 @@ extract_java_version() {
     local version_str=$(grep -A 5 "\[compileKotlin" "$project_dir/build.gradle" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9.]+")
     if [ -n "$version_str" ]; then
       java_version="$version_str"
-      echo "DEBUG: Encontrado padrão [compileKotlin] diretamente, versão: $java_version" >> /tmp/java_debug.log
+      debug_log "Encontrado padrão [compileKotlin] diretamente, versão: $java_version"
       echo "$java_version"
       return 0
     fi
@@ -42,24 +42,24 @@ extract_java_version() {
   # Procurar em build.gradle e build.gradle.kts
   for gradle_file in "${gradle_files[@]}"; do
     if [ -f "$gradle_file" ]; then
-      echo "DEBUG: Processando arquivo $gradle_file" >> /tmp/java_debug.log
+      debug_log "Processando arquivo $gradle_file"
       
       # Para arquivos Kotlin DSL (.kts): Verificar padrão configure<JavaPluginExtension>
       if [[ "$gradle_file" == *".kts" ]] && grep -q "configure<JavaPluginExtension>" "$gradle_file"; then
-        echo "Encontrado formato Kotlin DSL configure<JavaPluginExtension> em $gradle_file" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado formato Kotlin DSL configure<JavaPluginExtension> em $gradle_file"
         
         # Extrair o bloco JavaPluginExtension completo
         local configure_block=$(sed -n '/configure<JavaPluginExtension>/,/}/p' "$gradle_file")
         
         # Verificar se o bloco contém sourceCompatibility com JavaVersion
         if echo "$configure_block" | grep -q "sourceCompatibility.*=.*JavaVersion\.VERSION_[0-9]\+"; then
-          echo "Encontrado JavaVersion.VERSION_XX no bloco configure<JavaPluginExtension>" >> "$LOG_FILE" 2>&1
+          debug_log "Encontrado JavaVersion.VERSION_XX no bloco configure<JavaPluginExtension>"
           local version_num=$(echo "$configure_block" | grep -oP "VERSION_\K[0-9]+" | head -1)
           if [ -n "$version_num" ]; then
             java_version="$version_num"
-            echo "Extraído número da versão do bloco configure<JavaPluginExtension>: $java_version" >> "$LOG_FILE" 2>&1
+            debug_log "Extraído número da versão do bloco configure<JavaPluginExtension>: $java_version"
             # Debug - registrar o valor extraído
-            echo "DEBUG: Extraído Java versão $java_version do bloco configure<JavaPluginExtension> em $gradle_file" >> /tmp/java_debug.log
+            debug_log "Extraído Java versão $java_version do bloco configure<JavaPluginExtension> em $gradle_file"
           fi
         fi
         
@@ -71,17 +71,17 @@ extract_java_version() {
       
       # Verificar formato específico kotlin DSL: java.sourceCompatibility = JavaVersion.VERSION_XX
       if grep -q "java\.sourceCompatibility.*JavaVersion" "$gradle_file"; then
-        echo "Encontrado formato kotlin DSL java.sourceCompatibility em $gradle_file" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado formato kotlin DSL java.sourceCompatibility em $gradle_file"
         
         # Extrair a versão do JavaVersion enum (simplificado)
         if grep -q "VERSION_[0-9]" "$gradle_file"; then
           local java_enum=$(grep -oP "VERSION_\K[0-9]+" "$gradle_file" | head -1)
           java_version="$java_enum"
-          echo "Extraído número da versão do java.sourceCompatibility: $java_version" >> "$LOG_FILE" 2>&1
+          debug_log "Extraído número da versão do java.sourceCompatibility: $java_version"
         elif grep -q "VERSION_1_[0-9]" "$gradle_file"; then
           local java_enum=$(grep -oP "VERSION_1_\K[0-9]+" "$gradle_file" | head -1)
           java_version="1.$java_enum"
-          echo "Extraído número da versão 1.x do java.sourceCompatibility: $java_version" >> "$LOG_FILE" 2>&1
+          debug_log "Extraído número da versão 1.x do java.sourceCompatibility: $java_version"
         fi
         
         # Se encontrou versão, continue para o próximo passo
@@ -96,51 +96,51 @@ extract_java_version() {
       # Primeiro verificar o formato 1.x (mais específico) para evitar extração incorreta
       if grep -q "sourceCompatibility\s*=\s*1\.[0-9]\+" "$gradle_file"; then
         java_version=$(grep -oP "sourceCompatibility\s*=\s*1\.\K[0-9]+" "$gradle_file" | sed -E 's/([0-9]+).*/1.\1/g' | head -1)
-        echo "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
-        echo "DEBUG: Extraído Java versão $java_version de sourceCompatibility 1.x em $gradle_file" >> /tmp/java_debug.log
+        debug_log "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version"
+        debug_log "Extraído Java versão $java_version de sourceCompatibility 1.x em $gradle_file"
       # Depois verificar o padrão simples sourceCompatibility = 17 diretamente
       elif grep -q "sourceCompatibility\s*=\s*[0-9]\+" "$gradle_file"; then
         # Extrair número diretamente usando grep -oP
         java_version=$(grep -oP "sourceCompatibility\s*=\s*\K[0-9]+" "$gradle_file" | head -1)
-        echo "Encontrado sourceCompatibility número direto em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado sourceCompatibility número direto em $gradle_file: $java_version"
         # Debug
-        echo "DEBUG: Extraído Java versão $java_version de sourceCompatibility direto em $gradle_file" >> /tmp/java_debug.log
+        debug_log "Extraído Java versão $java_version de sourceCompatibility direto em $gradle_file"
       # CORRIGIDO: Verificar blocos java { sourceCompatibility = JavaVersion.VERSION_XX }
       elif grep -q "java\s*{" "$gradle_file"; then
-        echo "Encontrado bloco java { } em $gradle_file" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado bloco java { } em $gradle_file"
         
         # Verificar diretamente no arquivo para o padrão JavaVersion.VERSION_XX
         # Essa abordagem evita problemas com a extração do bloco java
         if grep -q "sourceCompatibility.*JavaVersion\.VERSION_[0-9]\+" "$gradle_file"; then
-          echo "Encontrado JavaVersion.VERSION_XX no arquivo" >> "$LOG_FILE" 2>&1
+          debug_log "Encontrado JavaVersion.VERSION_XX no arquivo"
           
           # Usar grep -o para extrair apenas a parte relevante e garantir precisão
           local version_str=$(grep -o "JavaVersion\.VERSION_[0-9]\+" "$gradle_file" | head -1)
           local version_num=$(echo "$version_str" | grep -oP "VERSION_\K[0-9]+" | head -1)
           
           # Debug - imprimir extração detalhada
-          echo "String completa: $version_str, Número extraído: $version_num" >> "$LOG_FILE" 2>&1
+          debug_log "String completa: $version_str, Número extraído: $version_num"
           
           if [ -n "$version_num" ]; then
             java_version="$version_num"
-            echo "Extraído número da versão do bloco java: $java_version" >> "$LOG_FILE" 2>&1
+            debug_log "Extraído número da versão do bloco java: $java_version"
             # Debug adicional
-            echo "DEBUG: Extraído Java versão $java_version de $gradle_file" >> /tmp/java_debug.log
+            debug_log "Extraído Java versão $java_version de $gradle_file"
           else
-            echo "FALHA: Não foi possível extrair número da versão do $version_str" >> "$LOG_FILE" 2>&1
+            debug_log "FALHA: Não foi possível extrair número da versão do $version_str"
           fi
         else
           # Extrair bloco java completo usando sed como fallback
-          echo "Tentando extrair do bloco java usando sed" >> "$LOG_FILE" 2>&1
+          debug_log "Tentando extrair do bloco java usando sed"
           local java_block=$(sed -n '/java\s*{/,/}/p' "$gradle_file")
           
           # Verificar se o bloco contém sourceCompatibility com JavaVersion
           if echo "$java_block" | grep -q "sourceCompatibility.*JavaVersion\.VERSION_[0-9]\+"; then
-            echo "Encontrado JavaVersion.VERSION_XX no bloco java" >> "$LOG_FILE" 2>&1
+            debug_log "Encontrado JavaVersion.VERSION_XX no bloco java"
             local version_num=$(echo "$java_block" | grep -oP "VERSION_\K[0-9]+" | head -1)
             if [ -n "$version_num" ]; then
               java_version="$version_num"
-              echo "Extraído número da versão do bloco java: $java_version" >> "$LOG_FILE" 2>&1
+              debug_log "Extraído número da versão do bloco java: $java_version"
             fi
           fi
         fi
@@ -151,7 +151,7 @@ extract_java_version() {
         fi
       # Verificar padrão Kotlin DSL para KotlinCompile com jvmTarget
       elif [[ "$gradle_file" == *".kts" ]] && grep -q "tasks.withType<KotlinCompile>" "$gradle_file"; then
-        echo "Encontrado padrão tasks.withType<KotlinCompile> em $gradle_file" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado padrão tasks.withType<KotlinCompile> em $gradle_file"
         # Extrair bloco KotlinCompile completo
         local kotlin_compile_block=$(sed -n '/tasks.withType<KotlinCompile>/,/}/p' "$gradle_file")
         
@@ -160,25 +160,25 @@ extract_java_version() {
           local version_num=$(echo "$kotlin_compile_block" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9]+" | head -1)
           if [ -n "$version_num" ]; then
             java_version="$version_num"
-            echo "Extraído número da versão do jvmTarget em tasks.withType<KotlinCompile>: $java_version" >> "$LOG_FILE" 2>&1
-            echo "DEBUG: Extraído Java versão $java_version do jvmTarget em $gradle_file" >> /tmp/java_debug.log
+            debug_log "Extraído número da versão do jvmTarget em tasks.withType<KotlinCompile>: $java_version"
+            debug_log "Extraído Java versão $java_version do jvmTarget em $gradle_file"
           fi
         fi
       # Verificar padrão Groovy para compileKotlin kotlinOptions com jvmTarget
       elif grep -q "compileKotlin" "$gradle_file" && grep -q "kotlinOptions" "$gradle_file" && grep -q "jvmTarget" "$gradle_file"; then
-        echo "Encontrado padrão com compileKotlin e kotlinOptions em $gradle_file" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado padrão com compileKotlin e kotlinOptions em $gradle_file"
         
         # Verificar especificamente pelo padrão [compileKotlin, compileTestKotlin]*.kotlinOptions
         if grep -q "\[compileKotlin" "$gradle_file"; then
-          echo "Encontrado padrão [compileKotlin... no arquivo $gradle_file" >> "$LOG_FILE" 2>&1
+          debug_log "Encontrado padrão [compileKotlin... no arquivo $gradle_file"
           
           # Extrair diretamente a versão do jvmTarget
           local version_str=$(grep -A 5 "\[compileKotlin" "$gradle_file" | grep -oP "jvmTarget\s*=\s*[\"']\K[0-9.]+")
           
           if [ -n "$version_str" ]; then
             java_version="$version_str"
-            echo "Extraído número da versão do jvmTarget com [compileKotlin: $java_version" >> "$LOG_FILE" 2>&1
-            echo "DEBUG: Extraído Java versão $java_version do jvmTarget em $gradle_file" >> /tmp/java_debug.log
+            debug_log "Extraído número da versão do jvmTarget com [compileKotlin: $java_version"
+            debug_log "Extraído Java versão $java_version do jvmTarget em $gradle_file"
           fi
         # Verificar outros padrões de compileKotlin
         else
@@ -187,12 +187,12 @@ extract_java_version() {
           
           if [ -n "$version_str" ]; then
             java_version="$version_str"
-            echo "Extraído número da versão do jvmTarget de outro padrão compileKotlin: $java_version" >> "$LOG_FILE" 2>&1
+            debug_log "Extraído número da versão do jvmTarget de outro padrão compileKotlin: $java_version"
           fi
         fi
       elif grep -q "JavaVersion\\.[A-Z_0-9]+" "$gradle_file"; then
         local java_enum=$(grep -oP "JavaVersion\.\K[A-Z_0-9]+" "$gradle_file" | head -1)
-        echo "Encontrado JavaVersion enum em $gradle_file: $java_enum" >> "$LOG_FILE" 2>&1
+        debug_log "Encontrado JavaVersion enum em $gradle_file: $java_enum"
         # Converter enum para número
         case "$java_enum" in
           VERSION_1_8) java_version="1.8" ;;
@@ -215,10 +215,10 @@ extract_java_version() {
             # Se não encontrou nas conversões, tentar extrair o número diretamente
             if [[ "$java_enum" =~ VERSION_([0-9]+) ]]; then
               java_version="${BASH_REMATCH[1]}"
-              echo "Extraído número da versão do enum: $java_version" >> "$LOG_FILE" 2>&1
+              debug_log "Extraído número da versão do enum: $java_version"
             elif [[ "$java_enum" =~ VERSION_1_([0-9]+) ]]; then
               java_version="1.${BASH_REMATCH[1]}"
-              echo "Extraído número da versão 1.x do enum: $java_version" >> "$LOG_FILE" 2>&1
+              debug_log "Extraído número da versão 1.x do enum: $java_version"
             else
               java_version=""
             fi
@@ -264,9 +264,9 @@ extract_java_version() {
 
   # Depurar - registrar versão final encontrada
   if [ -n "$java_version" ]; then
-    echo "Versão Java final extraída: $java_version para projeto $(basename "$project_dir")" >> "$LOG_FILE" 2>&1
+    debug_log "Versão Java final extraída: $java_version para projeto $(basename "$project_dir")"
   else
-    echo "Nenhuma versão Java encontrada para: $project_dir" >> "$LOG_FILE" 2>&1
+    debug_log "Nenhuma versão Java encontrada para: $project_dir"
   fi
   
   echo "$java_version"

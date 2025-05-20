@@ -29,7 +29,7 @@ extract_version_variables() {
   
   # Extrair variáveis de diferentes lugares
   
-  # Padres para extração de variáveis, propriedades e dependências
+  # Padrões para extração de variáveis, propriedades e dependências
   local var_patterns=(
     # 1. PADRÕES PARA VERSÕES EM ARQUIVOS GROOVY/GRADLE
     # Padrão para Groovy/Gradle: def someVersion = "1.2.3"
@@ -428,7 +428,7 @@ extract_dependencies() {
               if [ -n "$resolved_version" ] && [ "$resolved_version" != "$version" ]; then
                 # Substituir a versão no objeto JSON de forma mais segura
                 dep=$(echo "$dep" | sed "s/\"version\":\s*\"$version\"/\"version\":\"$resolved_version\"/")
-                echo "Resolvida variável em dependência: $version -> $resolved_version" >> "$LOG_FILE" 2>&1
+                debug_log "Resolvida variável em dependência: $version -> $resolved_version"
               fi
             fi
           fi
@@ -441,7 +441,7 @@ extract_dependencies() {
           dependencies_json="$dependencies_json$dep"
         else
           # Registrar dependência inválida no log
-          echo "Ignorando dependência com formato inválido: $dep" >> "$LOG_FILE" 2>&1
+          debug_log "Ignorando dependência com formato inválido: $dep"
         fi
       else
         # Corrigir JSON quebrado - tentar recuperar informações de diferentes formatos
@@ -457,7 +457,7 @@ extract_dependencies() {
           
           # Criar objeto JSON corrigido
           local fixed_dep="{\"group\":\"$fixed_group\",\"name\":\"$fixed_name\",\"version\":\"$fixed_version\",\"configuration\":\"$fixed_config\"}"
-          echo "Corrigido objeto JSON quebrado: $dep -> $fixed_dep" >> "$LOG_FILE" 2>&1
+          debug_log "Corrigido objeto JSON quebrado: $dep -> $fixed_dep"
           
           if ! $first; then
             dependencies_json="$dependencies_json,"
@@ -468,7 +468,7 @@ extract_dependencies() {
         # Verificar se é uma versão isolada (pode ser de uma tentativa de resolução anterior)
         elif [[ "$dep" =~ ^[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-zA-Z0-9.]+)?$ ]]; then
           # Ignorar versões isoladas, já devem ter sido incluídas em outro objeto
-          echo "Ignorando versão isolada: $dep" >> "$LOG_FILE" 2>&1
+          debug_log "Ignorando versão isolada: $dep"
         # Verificar se é um fragmento de JSON válido
         elif [[ "$dep" =~ \"(group|name|version|configuration)\":\"([^\"]+)\" ]]; then
           echo "Fragmento JSON detectado e ignorado: $dep" >> "$LOG_FILE" 2>&1
@@ -481,9 +481,9 @@ extract_dependencies() {
     
     dependencies_json="$dependencies_json]"
     # Direcionar log para o arquivo de log
-    echo "Encontradas ${#all_deps[@]} dependências em $project_dir" >> "$LOG_FILE" 2>&1
+    debug_log "Encontradas ${#all_deps[@]} dependências em $project_dir"
   else
-    echo "Nenhuma dependência encontrada em $project_dir" >> "$LOG_FILE" 2>&1
+    debug_log "Nenhuma dependência encontrada em $project_dir"
   fi
   
   echo "$dependencies_json"
@@ -743,7 +743,7 @@ extract_gradle_properties() {
   local properties="{}"
   
   if [ -f "$properties_file" ]; then
-    echo "Lendo propriedades de $properties_file" >> "$LOG_FILE" 2>&1
+    debug_log "Lendo propriedades de $properties_file"
     
     while IFS= read -r line; do
       # Ignorar linhas vazias e comentários
@@ -761,7 +761,7 @@ extract_gradle_properties() {
         
         # Adicionar à string de propriedades (simples)
         properties="$properties\"$key\":\"$value\","
-        echo "Extraída propriedade: $key = $value" >> "$LOG_FILE" 2>&1
+        debug_log "Extraída propriedade: $key = $value"
       fi
     done < "$properties_file"
     

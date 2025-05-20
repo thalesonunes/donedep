@@ -26,7 +26,7 @@ validate_json() {
   # Verificar por padrões de log que não deveriam estar no JSON
   if grep -q "INFO\|WARN\|ERROR\|DEBUG" "$json_file"; then
     warning "Detectadas mensagens de log no arquivo JSON: $json_file"
-    echo "Encontrados padrões de log no JSON que precisam ser removidos" >> "$LOG_FILE" 2>&1
+    debug_log "Encontrados padrões de log no JSON que precisam ser removidos"
     return 1
   fi
   
