@@ -7,6 +7,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <!-- Material Symbols Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,6 +22,22 @@
         </div>
         <span id="copy-modal-text">Copiado com sucesso!</span>
       </div>
+    </div>
+    <div class="incompatible-modal" id="incompatible-modal">
+      <div class="incompatible-modal-content">
+        <div class="warning-icon">
+          <span class="material-symbols-outlined">warning</span>
+        </div>
+        <div class="incompatible-message">
+          <div id="incompatible-modal-title">Combinação de filtros incompatível</div>
+          <div id="incompatible-modal-text">Limpe os filtros para continuar!</div>
+        </div>
+      </div>
+    </div>
+    <div class="filter-locked-modal" id="filter-locked-modal">
+      <div class="title">Filtro Bloqueado</div>
+      <div class="message">Para alterar um filtro selecionado, é necessário primeiro limpar todos os filtros clicando no botão "Limpar Filtros".</div>
+      <button class="button" onclick="closeFilterLockedModal()">Entendi</button>
     </div>
     <header>
       <div class="logo">
@@ -71,9 +89,8 @@
       <div class="loading">Carregando dependências...</div>
     </div>
   </div>
-
+  <script src="js/dependency-helper.js"></script>
   <script src="js/data-adapter.js"></script>
   <script src="js/app.js"></script>
-  <script src="js/dependency-helper.js"></script>
 </body>
 </html>

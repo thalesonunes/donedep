@@ -96,6 +96,12 @@ analyze_project() {
   
   # Extrair versões das tecnologias
   local java_version=$(extract_java_version "$project_dir" 2>/dev/null)
+  # Normalizar a versão do Java antes de salvar no JSON
+  if [ -n "$java_version" ]; then
+    java_version=$(normalize_java_version "$java_version")
+    debug_log "Versão Java normalizada para $java_version em $project_name"
+  fi
+  
   local kotlin_version=$(extract_kotlin_version "$project_dir" 2>/dev/null)
   local gradle_version=$(extract_gradle_version "$project_dir" 2>/dev/null)
   local spring_boot_version=$(extract_spring_boot_version "$project_dir" 2>/dev/null)

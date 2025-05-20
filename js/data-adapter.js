@@ -149,6 +149,7 @@ window.fetch = async function(...args) {
                                 version: formattedVersion || 'N/A',
                                 originalVersion: originalVersion, // Guardar a versão original para debugging
                                 configuration: dep.configuration || 'implementation',
+                                projects: [project.project], // Adicionar o nome do projeto atual
                                 hasUnresolvedVariable: isVariableVersion && formattedVersion.includes('<Ref:'),
                                 declaration: dep.declaration || 
                                     `${dep.configuration || 'implementation'}("${dep.group}:${dep.name}:${formattedVersion || 'N/A'}")`

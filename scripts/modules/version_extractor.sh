@@ -13,6 +13,17 @@ if [ -z "$LOG_FILE" ]; then
   LOG_FILE="/tmp/jone_dep_extraction.log"
 fi
 
+# Função para normalizar versões do Java
+normalize_java_version() {
+  local version="$1"
+  # Se a versão começa com 1. e tem outro número depois, usar apenas o segundo número
+  if [[ "$version" =~ ^1\.([0-9]+)$ ]]; then
+    echo "${BASH_REMATCH[1]}"
+  else
+    echo "$version"
+  fi
+}
+
 # Extrair versão do Java
 extract_java_version() {
   local project_dir="$1"
@@ -264,7 +275,9 @@ extract_java_version() {
 
   # Depurar - registrar versão final encontrada
   if [ -n "$java_version" ]; then
-    debug_log "Versão Java final extraída: $java_version para projeto $(basename "$project_dir")"
+    # Normalizar a versão do Java antes de retorná-la
+    java_version=$(normalize_java_version "$java_version")
+    debug_log "Versão Java final normalizada: $java_version para projeto $(basename "$project_dir")"
   else
     debug_log "Nenhuma versão Java encontrada para: $project_dir"
   fi

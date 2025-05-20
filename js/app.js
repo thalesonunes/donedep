@@ -14,6 +14,23 @@ const copyAllButton = document.getElementById('copy-all-button');
 const clearFiltersButton = document.getElementById('clear-filters-button');
 const dependenciesGrid = document.getElementById('dependencies-grid');
 
+// Funções para o modal de filtro bloqueado
+function showFilterLockedModal() {
+  const modal = document.getElementById('filter-locked-modal');
+  if (!modal.classList.contains('show')) {
+    modal.classList.add('show');
+    // Fechar o modal automaticamente após 3 segundos
+    setTimeout(() => {
+      closeFilterLockedModal();
+    }, 3000);
+  }
+}
+
+function closeFilterLockedModal() {
+  const modal = document.getElementById('filter-locked-modal');
+  modal.classList.remove('show');
+}
+
 // Definindo as funções auxiliares primeiro
 function getUnique(projects, key) {
   if (!projects || projects.length === 0) {
@@ -34,6 +51,29 @@ function getUnique(projects, key) {
     }
   };
   
+  // Função para comparar versões
+  const compareVersions = (a, b) => {
+    if (a === b) return 0;
+    
+    // Se um dos valores é "Nenhum", ele vem por último
+    if (a === 'Nenhum') return 1;
+    if (b === 'Nenhum') return -1;
+    
+    // Converter strings de versão para arrays de números
+    const aParts = a.toString().split('.').map(Number);
+    const bParts = b.toString().split('.').map(Number);
+    
+    // Comparar cada parte da versão
+    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+      const aVal = aParts[i] || 0;
+      const bVal = bParts[i] || 0;
+      if (aVal !== bVal) {
+        return aVal - bVal;
+      }
+    }
+    return 0;
+  };
+  
   // Tratamento especial para Kotlin - incluir valores null como "Nenhum"
   if (key === 'kotlin') {
     const values = projects.map(p => {
@@ -44,96 +84,63 @@ function getUnique(projects, key) {
       }
       return value;
     });
-    return Array.from(new Set(values.filter(v => v !== undefined))).sort();
+    return Array.from(new Set(values.filter(v => v !== undefined))).sort(compareVersions);
   }
   
-  // Para outros campos, apenas extraímos valores únicos não nulos
-  return Array.from(new Set(projects.map(p => safeGetRequirement(p, key)).filter(Boolean))).sort();
+  // Para outros campos, apenas extraímos valores únicos não nulos e ordenamos por versão
+  return Array.from(new Set(projects.map(p => safeGetRequirement(p, key)).filter(Boolean))).sort(compareVersions);
 }
 
 function fillDropdown(id, values, selectedValue) {
   const select = document.getElementById(id);
-  if (!select) {
-    console.error(`Elemento com ID '${id}' não encontrado`);
-    return;
-  }
+  select.innerHTML = '';
   
-  // Guardar o valor atual antes de limpar o dropdown
-  const prev = select.value;
-  
-  // Limpar e adicionar opção padrão
-  select.innerHTML = '<option value="">Todas</option>';
-  
-  // Se não houver opções compatíveis e um valor estiver selecionado,
-  // é preciso resetar porque a combinação não é compatível
-  if (values.length === 0 && selectedValue) {
-    console.warn(`Nenhuma opção compatível para ${id} com o valor ${selectedValue}. Resetando filtro.`);
+  // Se há um valor selecionado e ele existe nas opções disponíveis
+  if (selectedValue && values.includes(selectedValue)) {
+    // Opção selecionada
+    const optSelected = document.createElement('option');
+    optSelected.value = selectedValue;
+    optSelected.textContent = selectedValue;
+    optSelected.selected = true;
+    select.appendChild(optSelected);
     
-    // Resetar o valor do dropdown
-    select.value = '';
-    
-    // Atualizar o filtro ativo correspondente
-    const filterId = id.replace('filter-', '');
-    const filterKey = filterId === 'spring' ? 'spring_boot' : filterId;
-    activeFilters[filterKey] = null;
-    
-    // Notificar que este filtro foi resetado devido a incompatibilidade
-    if (!select.classList.contains('filter-reset-animation')) {
-      select.classList.add('filter-reset-animation');
-      setTimeout(() => {
-        select.classList.remove('filter-reset-animation');
-      }, 1000);
+    // Bloquear o dropdown quando um valor é selecionado
+    select.disabled = true;
+  } else {
+    // Se houver apenas uma opção disponível, selecioná-la automaticamente
+    if (values.length === 1) {
+      const optOnly = document.createElement('option');
+      optOnly.value = values[0];
+      optOnly.textContent = values[0];
+      optOnly.selected = true;
+      select.appendChild(optOnly);
+      
+      // Atualizar o filtro ativo correspondente e bloquear o dropdown
+      updateActiveFilter(id, values[0]);
+      select.disabled = true;
+    } else {
+      // Se houver múltiplas opções, mostrar todas
+      const optAll = document.createElement('option');
+      optAll.value = '';
+      optAll.textContent = 'Todas';
+      select.appendChild(optAll);
+      
+      // Adicionar opções compatíveis em ordem alfabética
+      values.sort().forEach(val => {
+        const opt = document.createElement('option');
+        opt.value = val;
+        opt.textContent = val;
+        select.appendChild(opt);
+      });
+      
+      // Manter o dropdown desbloqueado quando não há seleção
+      select.disabled = false;
     }
-    
-    // Acionar evento de mudança para atualizar os outros dropdowns
-    const event = new Event('change');
-    select.dispatchEvent(event);
-    
-    return;
   }
   
-  // Adicionar opções disponíveis
-  values.sort().forEach(val => {
-    const opt = document.createElement('option');
-    opt.value = val;
-    opt.textContent = val;
-    if (selectedValue === val) opt.selected = true;
-    select.appendChild(opt);
-  });
-  
-  // Se houver apenas uma opção, selecioná-la automaticamente
-  if (values.length === 1 && !selectedValue) {
-    select.value = values[0];
-    
-    // Atualizar o filtro ativo correspondente
-    const filterId = id.replace('filter-', '');
-    const filterKey = filterId === 'spring' ? 'spring_boot' : filterId;
-    activeFilters[filterKey] = values[0];
-    
-    console.log(`Seleção automática: ${filterId} = ${values[0]}`);
-  }
-  
-  // Se um valor está selecionado mas não existe mais nas opções disponíveis,
-  // resetar para "Todas"
-  if (selectedValue && !values.includes(selectedValue)) {
-    select.value = '';
-    
-    // Atualizar o filtro ativo correspondente
-    const filterId = id.replace('filter-', '');
-    const filterKey = filterId === 'spring' ? 'spring_boot' : filterId;
-    activeFilters[filterKey] = null;
-    
-    // Notificar que este filtro foi resetado devido a incompatibilidade
-    if (!select.classList.contains('filter-reset-animation')) {
-      select.classList.add('filter-reset-animation');
-      setTimeout(() => {
-        select.classList.remove('filter-reset-animation');
-      }, 1000);
-    }
-    
-    // Acionar evento de mudança para atualizar os outros dropdowns
-    const event = new Event('change');
-    select.dispatchEvent(event);
+  // Se não houver opções disponíveis, desabilitar o dropdown
+  if (values.length === 0) {
+    select.disabled = true;
   }
 }
 
@@ -195,6 +202,24 @@ function showCopyModal(message) {
   setTimeout(() => {
     copyModal.classList.remove('show');
   }, 2000);
+}
+
+function showIncompatibleModal() {
+  // Mostrar o modal de incompatibilidade
+  const incompatibleModal = document.getElementById('incompatible-modal');
+  
+  // Remover a classe show caso já esteja aplicada
+  incompatibleModal.classList.remove('show');
+  
+  // Forçar reflow para reiniciar a animação
+  void incompatibleModal.offsetWidth;
+  
+  incompatibleModal.classList.add('show');
+  
+  // Esconder o modal após 3 segundos
+  setTimeout(() => {
+    incompatibleModal.classList.remove('show');
+  }, 3000);
 }
 
 // Função principal para carregar as dependências
@@ -283,13 +308,18 @@ function initializeFilters() {
 }
 
 function updateAllDropdowns() {
-  // Filtros ativos
+  // Obter as seleções atuais dos filtros
   const selected = {
     java: document.getElementById('filter-java').value || null,
     kotlin: document.getElementById('filter-kotlin').value || null,
     gradle: document.getElementById('filter-gradle').value || null,
     spring_boot: document.getElementById('filter-spring').value || null
   };
+  
+  // Sincronizar com activeFilters para garantir consistência
+  Object.entries(selected).forEach(([key, value]) => {
+    activeFilters[key] = value;
+  });
   
   console.log("Atualizando dropdowns com seleções:", selected);
   
@@ -308,63 +338,37 @@ function updateAllDropdowns() {
     });
   }
   
-  // Não filtrar projetos sem dependências, vamos usar todos os projetos
-  let filteredProjects = [...(window._allProjects || [])];
-  
-  // Aplicar os filtros selecionados
-  Object.entries(selected).forEach(([key, value]) => {
-    if (value) {
-      console.log(`Aplicando filtro: ${key} = ${value}`);
-      
-      // Tratamento especial para o valor "Nenhum" do Kotlin
-      if (key === 'kotlin' && value === 'Nenhum') {
-        filteredProjects = filteredProjects.filter(p => 
-          p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
-        );
-      } else {
-        filteredProjects = filteredProjects.filter(p => 
-          p && p.requirements && p.requirements[key] === value
-        );
-      }
-    }
-  });
-  
-  console.log(`Após filtragem: ${filteredProjects.length} projetos correspondem aos filtros`);
-  
-  // Obter as opções compatíveis para cada filtro com base nos projetos filtrados
-  const compatibleOptions = {
-    java: getUnique(filteredProjects, 'java'),
-    kotlin: getUnique(filteredProjects, 'kotlin'),
-    gradle: getUnique(filteredProjects, 'gradle'),
-    spring_boot: getUnique(filteredProjects, 'spring_boot')
-  };
-  
-  console.log("Opções compatíveis:", compatibleOptions);
-  
-  // Atualizar cada dropdown com as opções compatíveis
-  // Agora, para cada dropdown, vamos mostrar apenas as opções compatíveis com as seleções atuais
-  // mesmo para dropdowns que já têm uma seleção
-  
-  // Para cada tipo de filtro, precisamos simular como seria o filtro se removêssemos este filtro,
-  // mas mantendo os outros filtros ativos
-  
-  // Atualizar Java dropdown - sempre mostrar opções compatíveis com outros filtros
+  // Para cada filtro, precisamos obter as opções compatíveis considerando os outros filtros ativos
   const javaCompatibleOptions = getCompatibleOptions('java', selected);
-  fillDropdown('filter-java', javaCompatibleOptions, selected.java);
-  
-  // Atualizar Gradle dropdown - sempre mostrar opções compatíveis com outros filtros
   const gradleCompatibleOptions = getCompatibleOptions('gradle', selected);
-  fillDropdown('filter-gradle', gradleCompatibleOptions, selected.gradle);
-  
-  // Atualizar Kotlin dropdown - sempre mostrar opções compatíveis com outros filtros
   const kotlinCompatibleOptions = getCompatibleOptions('kotlin', selected);
-  fillDropdown('filter-kotlin', kotlinCompatibleOptions, selected.kotlin);
-  
-  // Atualizar Spring Boot dropdown - sempre mostrar opções compatíveis com outros filtros
   const springBootCompatibleOptions = getCompatibleOptions('spring_boot', selected);
+  
+  // Atualizar cada dropdown mantendo sua seleção atual se ainda for válida
+  fillDropdown('filter-java', javaCompatibleOptions, selected.java);
+  fillDropdown('filter-gradle', gradleCompatibleOptions, selected.gradle);
+  fillDropdown('filter-kotlin', kotlinCompatibleOptions, selected.kotlin);
   fillDropdown('filter-spring', springBootCompatibleOptions, selected.spring_boot);
+  
+  // Se algum dropdown tiver apenas uma opção e não estiver selecionado,
+  // selecionar automaticamente
+  if (javaCompatibleOptions.length === 1 && !selected.java) {
+    document.getElementById('filter-java').value = javaCompatibleOptions[0];
+    activeFilters.java = javaCompatibleOptions[0];
+  }
+  if (gradleCompatibleOptions.length === 1 && !selected.gradle) {
+    document.getElementById('filter-gradle').value = gradleCompatibleOptions[0];
+    activeFilters.gradle = gradleCompatibleOptions[0];
+  }
+  if (kotlinCompatibleOptions.length === 1 && !selected.kotlin) {
+    document.getElementById('filter-kotlin').value = kotlinCompatibleOptions[0];
+    activeFilters.kotlin = kotlinCompatibleOptions[0];
+  }
+  if (springBootCompatibleOptions.length === 1 && !selected.spring_boot) {
+    document.getElementById('filter-spring').value = springBootCompatibleOptions[0];
+    activeFilters.spring_boot = springBootCompatibleOptions[0];
+  }
 }
-// Função para debug - imprime no console os filtros relacionados
 function debugFilterRelationships() {
   console.log("%c=== Análise de Relações entre Filtros ===", "font-weight:bold; color:blue;");
   
@@ -423,49 +427,34 @@ function debugFilterRelationships() {
 
 // Função para obter opções compatíveis para um determinado filtro
 function getCompatibleOptions(filterToUpdate, currentSelections) {
-  // Cria uma cópia das seleções atuais, mas remove a seleção do filtro que estamos atualizando
-  const simulatedSelections = {...currentSelections};
-  simulatedSelections[filterToUpdate] = null;
-  
-  // Usar todos os projetos, não apenas os que têm dependências
+  // Começar com todos os projetos
   let filteredProjects = [...window._allProjects];
   
-  // Verificar se os projetos têm a estrutura requirements
-  filteredProjects = filteredProjects.filter(p => p && typeof p === 'object');
-  
-  // Garantir que todos os projetos têm um objeto requirements
-  filteredProjects.forEach(p => {
-    if (!p.requirements) {
-      p.requirements = {
-        java: null,
-        kotlin: null,
-        gradle: null,
-        spring_boot: null
-      };
-    }
-  });
-  
-  // Aplica os filtros das seleções simuladas
-  Object.entries(simulatedSelections).forEach(([key, value]) => {
-    if (value) {
-      // Tratamento especial para o valor "Nenhum" do Kotlin
+  // Aplicar apenas os filtros que estão ativos e não são o filtro que estamos atualizando
+  Object.entries(currentSelections).forEach(([key, value]) => {
+    // Só aplicar o filtro se ele tiver um valor e não for o filtro que estamos atualizando
+    if (value && key !== filterToUpdate) {
+      console.log(`Aplicando filtro ${key}=${value} para obter opções de ${filterToUpdate}`);
+      
       if (key === 'kotlin' && value === 'Nenhum') {
+        // Caso especial para Kotlin "Nenhum"
         filteredProjects = filteredProjects.filter(p => 
-          p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
+          p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
         );
       } else {
+        // Filtro normal
         filteredProjects = filteredProjects.filter(p => 
-          p.requirements && p.requirements[key] === value
+          p && p.requirements && p.requirements[key] === value
         );
       }
     }
   });
   
-  // Agora obtemos os valores únicos para o filtro que estamos atualizando
-  const compatibleOptions = getUnique(filteredProjects, filterToUpdate);
+  // Obter as opções únicas para o filtro que estamos atualizando
+  const key = filterToUpdate === 'spring' ? 'spring_boot' : filterToUpdate;
+  const compatibleOptions = getUnique(filteredProjects, key);
   
-  // Log de depuração para mostrar opções compatíveis
-  console.log(`Opções compatíveis para ${filterToUpdate}: ${compatibleOptions.join(', ') || 'nenhuma'}`);
+  console.log(`Opções compatíveis para ${filterToUpdate}:`, compatibleOptions);
   
   return compatibleOptions;
 }
@@ -481,11 +470,14 @@ function clearAllFilters() {
     spring_boot: null
   };
   
-  // Resetar todos os dropdowns manualmente
-  document.getElementById('filter-java').value = '';
-  document.getElementById('filter-kotlin').value = '';
-  document.getElementById('filter-gradle').value = '';
-  document.getElementById('filter-spring').value = '';
+  // Desbloquear e resetar todos os dropdowns
+  ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+    const dropdown = document.getElementById('filter-' + type);
+    if (dropdown) {
+      dropdown.value = '';
+      dropdown.disabled = false;
+    }
+  });
   
   // Atualizar todos os dropdowns para mostrar todas as opções válidas
   updateAllDropdowns();
@@ -493,20 +485,6 @@ function clearAllFilters() {
   // Limpar campo de busca
   searchInput.value = '';
   searchTerm = '';
-  
-  // Resetar todos os dropdowns
-  ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
-    const dropdown = document.getElementById('filter-' + type);
-    if (dropdown) {
-      dropdown.value = '';
-    }
-  });
-  
-  // Mostrar todas as opções disponíveis nos dropdowns
-  fillDropdown('filter-java', getUnique(window._allProjects, 'java'), null);
-  fillDropdown('filter-kotlin', getUnique(window._allProjects, 'kotlin'), null);
-  fillDropdown('filter-gradle', getUnique(window._allProjects, 'gradle'), null);
-  fillDropdown('filter-spring', getUnique(window._allProjects, 'spring_boot'), null);
   
   // Renderizar todas as dependências
   renderDependencies();
@@ -517,18 +495,32 @@ function clearAllFilters() {
 function setupEventListeners() {
   // Dropdowns
   ['java','kotlin','gradle','spring'].forEach(type => {
-    document.getElementById('filter-' + type).addEventListener('change', e => {
+    const dropdown = document.getElementById('filter-' + type);
+    
+    // Evento de mudança no dropdown
+    dropdown.addEventListener('change', e => {
       const filterKey = type === 'spring' ? 'spring_boot' : type;
-      activeFilters[filterKey] = e.target.value || null;
+      const newValue = e.target.value;
+      
+      // Atualizar apenas o filtro que mudou
+      activeFilters[filterKey] = newValue || null;
       
       // Atualizar os dropdowns para refletir as opções compatíveis
-      // Esta função agora filtra bidirecionalmente todos os dropdowns
+      // considerando a mudança apenas neste filtro
       updateAllDropdowns();
       
       // Renderizar dependências com os novos filtros
       renderDependencies();
       
       console.log(`Filtro ${filterKey} alterado para: ${activeFilters[filterKey]}`);
+    });
+    
+    // Evento de clique no dropdown - para mostrar o modal quando estiver desabilitado
+    dropdown.addEventListener('mousedown', (e) => {
+      if (e.target.disabled) {
+        e.preventDefault();
+        showFilterLockedModal();
+      }
     });
   });
   // Busca
@@ -597,19 +589,30 @@ function renderDependencies() {
       </div>`;
     }
     
+    // Extrair os projetos que usam esta dependência
+    let projectsHtml = '';
+    const anyFilterActive = Object.values(activeFilters).some(v => v);
+    
+    // Se há projetos e contém um array
+    if (dep.projects && Array.isArray(dep.projects) && dep.projects.length > 0) {
+      // Se houver apenas um projeto ou se filtros estiverem ativos, mostre o nome do projeto
+      if (dep.projects.length === 1 || anyFilterActive) {
+        projectsHtml = `<div class="dependency-projects">${dep.projects.join(', ')}</div>`;
+      } 
+      // Se não houver filtros ativos e houver múltiplos projetos, mostre a lista de projetos
+      else if (dep.projects.length > 1) {
+        projectsHtml = `<div class="dependency-projects">${dep.projects.join(',\n')}</div>`;
+      }
+    }
+    
     card.innerHTML = `
       <div class="dependency-group">${dep.group}</div>
       <div class="dependency-name">${dep.name}</div>
+      ${projectsHtml}
       <div class="dependency-version">
-        <span class="${versionClass}">${dep.version}</span>
+        <span class="${versionClass}" id="version-${dep.id || Math.random().toString(36).substring(2)}">${dep.version}</span>
         ${warningInfo}
-        <button class="copy-button" data-declaration="${escapeHTML(copyDeclaration)}">
-          <svg class="icon" viewBox="0 0 24 24">
-            <path d="M8 4V16C8 17.1 8.9 18 10 18H18C19.1 18 20 17.1 20 16V7.4L16.6 4H10C8.9 4 8 4.9 8 6"></path>
-            <path d="M16 4V8H20"></path>
-            <path d="M4 8V18C4 19.1 4.9 20 6 20H14"></path>
-          </svg>
-        </button>
+        <span class="material-symbols-outlined copy-button" data-declaration="${escapeHTML(copyDeclaration)}">content_copy</span>
       </div>
     `;
     dependenciesGrid.appendChild(card);
@@ -682,30 +685,101 @@ function getFilteredDependencies() {
     
     console.log(`Encontradas ${allDeps.length} dependências antes da filtragem`);
     
-    // Se nenhum filtro estiver ativo, mostrar todas as dependências de todos os projetos
+    // Recarregar todas as dependências de todos os projetos se não houver filtro
     if (!anyFilterActive) {
       allDeps = [];
       projects.forEach(project => {
         if (project && Array.isArray(project.dependencies)) {
-          allDeps = allDeps.concat(project.dependencies);
+          // Adicionar o nome do projeto em cada dependência
+          const projectDeps = project.dependencies.map(dep => ({
+            ...dep,
+            projects: dep.projects ? [...dep.projects] : [],
+            projectName: project.project
+          }));
+          allDeps = allDeps.concat(projectDeps);
         }
       });
+      
+      // Filtrar dependências válidas (com group e name)
+      const validDeps = allDeps.filter(dep => dep && typeof dep === 'object' && dep.group && dep.name);
+      if (validDeps.length < allDeps.length) {
+        console.warn(`Removidas ${allDeps.length - validDeps.length} dependências inválidas`);
+      }
+      allDeps = validDeps;
+      
+      // Quando não há filtros, agrupar dependências iguais com projetos diferentes
+      console.log("Nenhum filtro ativo - agrupando dependências por grupo/nome");
+      const depMap = {};
+      allDeps.forEach(dep => {
+        const key = `${dep.group}:${dep.name}:${dep.version}`;
+        if (!depMap[key]) {
+          // Adicionar um ID único para cada dependência
+          const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+          depMap[key] = {...dep, id: uniqueId, projects: []};
+          // Adicionar o primeiro projeto se existir
+          if (dep.projectName && !depMap[key].projects.includes(dep.projectName)) {
+            depMap[key].projects.push(dep.projectName);
+          }
+        } else {
+          // Se a dependência já existe, adicionar o projeto à lista
+          if (dep.projectName && !depMap[key].projects.includes(dep.projectName)) {
+            depMap[key].projects.push(dep.projectName);
+          }
+        }
+      });
+      allDeps = Object.values(depMap);
+    } else {
+      // Se houver filtros ativos, NÃO agrupar as dependências
+      console.log("Filtros ativos - mantendo dependências separadas por projeto");
+      
+      // Filtrar dependências válidas (com group e name)
+      const validDeps = allDeps.filter(dep => dep && typeof dep === 'object' && dep.group && dep.name);
+      if (validDeps.length < allDeps.length) {
+        console.warn(`Removidas ${allDeps.length - validDeps.length} dependências inválidas`);
+      }
+      allDeps = validDeps;
+      
+      // Garantir que cada dependência tem o array projects com pelo menos o nome do projeto
+      allDeps = allDeps.map(dep => {
+        // Adicionar ID único para cada dependência
+        const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        
+        // Garantir que projects é um array
+        if (!dep.projects) {
+          dep.projects = [];
+        }
+        
+        // Se não temos um nome de projeto específico para a dependência,
+        // tentar identificar o projeto de alguma forma
+        if (dep.projectName && !dep.projects.includes(dep.projectName)) {
+          dep.projects.push(dep.projectName);
+        }
+        
+        return {...dep, id: uniqueId};
+      });
     }
-    
-    // Filtrar dependências válidas (com group e name)
-    const validDeps = allDeps.filter(dep => dep && typeof dep === 'object' && dep.group && dep.name);
-    if (validDeps.length < allDeps.length) {
-      console.warn(`Removidas ${allDeps.length - validDeps.length} dependências inválidas`);
-    }
-    allDeps = validDeps;
     
     // Aplicar filtro de busca
     if (searchTerm) {
       const beforeSearchCount = allDeps.length;
       allDeps = allDeps.filter(dep => {
         try {
-          return dep.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                dep.group.toLowerCase().includes(searchTerm.toLowerCase());
+          // Buscar em nome, grupo e versão
+          const nameMatch = dep.name && dep.name.toLowerCase().includes(searchTerm.toLowerCase());
+          const groupMatch = dep.group && dep.group.toLowerCase().includes(searchTerm.toLowerCase());
+          const versionMatch = dep.version && dep.version.toLowerCase().includes(searchTerm.toLowerCase());
+          
+          // Buscar também nos projetos (se houver)
+          let projectsMatch = false;
+          if (dep.projects && Array.isArray(dep.projects)) {
+            projectsMatch = dep.projects.some(project => 
+              project && project.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+          } else if (dep.projectName) {
+            projectsMatch = dep.projectName.toLowerCase().includes(searchTerm.toLowerCase());
+          }
+          
+          return nameMatch || groupMatch || versionMatch || projectsMatch;
         } catch (e) {
           console.error("Erro ao filtrar dependência por termo de busca:", e, dep);
           return false;
@@ -723,3 +797,15 @@ function getFilteredDependencies() {
 }
 // Inicializar a aplicação
 loadDependencies();
+
+function updateActiveFilter(id, value) {
+  // Converter o ID do elemento para a chave do filtro
+  const filterKey = id.replace('filter-', '');
+  const actualKey = filterKey === 'spring' ? 'spring_boot' : filterKey;
+  
+  // Atualizar o filtro ativo
+  activeFilters[actualKey] = value || null;
+  
+  // Recarregar as dependências para refletir a mudança
+  renderDependencies();
+}
