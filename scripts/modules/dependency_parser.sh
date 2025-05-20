@@ -81,7 +81,7 @@ extract_version_variables() {
           fi
           variables="$variables\"$var_name\":\"$var_value\""
           
-          log_debug "Extraída variável de gradle.properties: $var_name = $var_value"
+          debug_log "Extraída variável de gradle.properties: $var_name = $var_value"
         fi
       else
         # Para arquivos Gradle regulares
@@ -111,7 +111,7 @@ extract_version_variables() {
             fi
             variables="$variables\"$var_name\":\"$var_value\""
             
-            log_debug "Extraída variável de $gradle_file: $var_name = $var_value"
+            debug_log "Extraída variável de $gradle_file: $var_name = $var_value"
             break
           fi
         done
@@ -148,7 +148,7 @@ extract_version_variables() {
             fi
             variables="$variables\"$var_name\":\"$var_value\""
             
-            log_debug "Extraída variável do bloco extra do Kotlin DSL: $var_name = $var_value"
+            debug_log "Extraída variável do bloco extra do Kotlin DSL: $var_name = $var_value"
           fi
         fi
       done <<< "$file_content"
@@ -189,13 +189,13 @@ resolve_version_variable() {
     return 1
   fi
   
-  log_debug "Tentando resolver variável: $var_name para o projeto no diretório $project_dir"
+  debug_log "Tentando resolver variável: $var_name para o projeto no diretório $project_dir"
   
   # Se for uma variável do tipo property() do Kotlin DSL, buscar diretamente no gradle.properties
   if [ "$is_kotlin_property" = true ] && [ -f "$project_dir/gradle.properties" ]; then
     local prop_value=$(grep -E "^${var_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
     if [ -n "$prop_value" ]; then
-      log_debug "Variável Kotlin DSL $var_name resolvida diretamente do gradle.properties: $prop_value"
+      debug_log "Variável Kotlin DSL $var_name resolvida diretamente do gradle.properties: $prop_value"
       echo "$prop_value"
       return 0
     fi
@@ -206,7 +206,7 @@ resolve_version_variable() {
     # Verificar se o contexto contém a variável diretamente
     local direct_match=$(echo "$project_context" | jq -r ".$var_name // empty" 2>/dev/null)
     if [ -n "$direct_match" ]; then
-      log_debug "Variável $var_name resolvida pelo contexto do projeto: $direct_match"
+      debug_log "Variável $var_name resolvida pelo contexto do projeto: $direct_match"
       echo "$direct_match"
       return 0
     fi
@@ -216,7 +216,7 @@ resolve_version_variable() {
   if [ -f "$project_dir/gradle.properties" ]; then
     local gradle_value=$(grep -E "^$var_name\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
     if [ -n "$gradle_value" ]; then
-      log_debug "Variável $var_name resolvida pelo gradle.properties: $gradle_value"
+      debug_log "Variável $var_name resolvida pelo gradle.properties: $gradle_value"
       echo "$gradle_value"
       return 0
     fi
@@ -227,7 +227,7 @@ resolve_version_variable() {
     # Buscar em ext block
     local ext_match=$(grep -oP "ext\s*\{[^}]*$var_name\s*=\s*['\"]\\K[^'\"]*" "$project_dir/build.gradle" 2>/dev/null)
     if [ -n "$ext_match" ]; then
-      log_debug "Variável $var_name resolvida pelo ext block do build.gradle: $ext_match"
+      debug_log "Variável $var_name resolvida pelo ext block do build.gradle: $ext_match"
       echo "$ext_match"
       return 0
     fi
@@ -235,7 +235,7 @@ resolve_version_variable() {
     # Buscar em definições def
     local def_match=$(grep -E "def\s+$var_name\s*=\s*['\"]([^'\"]+)['\"]" "$project_dir/build.gradle" | sed -E "s/.*['\"]([^'\"]+)['\"].*/\\1/" 2>/dev/null)
     if [ -n "$def_match" ]; then
-      log_debug "Variável $var_name resolvida por definição def no build.gradle: $def_match"
+      debug_log "Variável $var_name resolvida por definição def no build.gradle: $def_match"
       echo "$def_match"
       return 0
     fi
@@ -243,7 +243,7 @@ resolve_version_variable() {
     # Buscar por atribuição direta
     local direct_assign=$(grep -E "$var_name\s*=\s*['\"]([^'\"]+)['\"]" "$project_dir/build.gradle" | sed -E "s/.*['\"]([^'\"]+)['\"].*/\\1/" 2>/dev/null)
     if [ -n "$direct_assign" ]; then
-      log_debug "Variável $var_name resolvida por atribuição direta no build.gradle: $direct_assign"
+      debug_log "Variável $var_name resolvida por atribuição direta no build.gradle: $direct_assign"
       echo "$direct_assign"
       return 0
     fi
@@ -256,7 +256,7 @@ resolve_version_variable() {
       if [ -n "$project_context" ]; then
         local kotlin_version=$(echo "$project_context" | jq -r '.kotlinVersion // empty' 2>/dev/null)
         if [ -n "$kotlin_version" ]; then
-          log_debug "Variável $var_name resolvida usando kotlinVersion do projeto: $kotlin_version"
+          debug_log "Variável $var_name resolvida usando kotlinVersion do projeto: $kotlin_version"
           echo "$kotlin_version"
           return 0
         fi
@@ -267,7 +267,7 @@ resolve_version_variable() {
       if [ -n "$project_context" ]; then
         local spring_version=$(echo "$project_context" | jq -r '.springBootVersion // empty' 2>/dev/null)
         if [ -n "$spring_version" ]; then
-          log_debug "Variável $var_name resolvida usando springBootVersion do projeto: $spring_version"
+          debug_log "Variável $var_name resolvida usando springBootVersion do projeto: $spring_version"
           echo "$spring_version"
           return 0
         fi
@@ -275,19 +275,19 @@ resolve_version_variable() {
       ;;
     oracleDriverVersion)
       # Valores comuns para Oracle Driver
-      log_debug "Resolvendo variável oracleDriverVersion com valor padrão"
+      debug_log "Resolvendo variável oracleDriverVersion com valor padrão"
       echo "19.8.0.0"
       return 0
       ;;
     jjwtVersion)
       # Valores comuns para JJWT
-      log_debug "Resolvendo variável jjwtVersion com valor padrão"
+      debug_log "Resolvendo variável jjwtVersion com valor padrão"
       echo "0.11.5"
       return 0
       ;;
     swaggerVersion)
       # Valores comuns para Swagger/SpringFox
-      log_debug "Resolvendo variável swaggerVersion com valor padrão"
+      debug_log "Resolvendo variável swaggerVersion com valor padrão"
       echo "2.10.0"
       return 0
       ;;
@@ -302,7 +302,7 @@ resolve_version_variable() {
     if [ -f "$project_dir/gradle.properties" ]; then
       local kebab_value=$(grep -E "^${kebab_name}\.version\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
       if [ -n "$kebab_value" ]; then
-        log_debug "Variável $var_name resolvida usando convenção kebab-case: $kebab_value"
+        debug_log "Variável $var_name resolvida usando convenção kebab-case: $kebab_value"
         echo "$kebab_value"
         return 0
       fi
@@ -796,7 +796,7 @@ parse_kotlin_dsl_dependencies() {
       
       # Armazenar no array
       props["$key"]="$value"
-      log_debug "Propriedade gradle carregada: $key = $value"
+      debug_log "Propriedade gradle carregada: $key = $value"
     done < "$project_dir/gradle.properties"
   fi
   
@@ -811,18 +811,21 @@ parse_kotlin_dsl_dependencies() {
       
       # Adicionar também ao array props para uso posterior
       props["$var_name"]="$var_value"
+      debug_log "Variável Kotlin DSL extraída: $var_name = $var_value"
     fi
   done < "$build_file"
   
-  log_debug "Variáveis extraídas do Kotlin DSL: $kotlin_dsl_vars"
-  log_debug "Propriedades extraídas do gradle.properties: $gradle_properties"
+  # Registrando debug do que já carregamos de propriedades
+  debug_log "Número de propriedades carregadas: ${#props[@]}"
+  debug_log "Verificando property() em: $project_dir"
   
-  # Em arquivos Kotlin DSL, dependências podem usar property()
+  debug_log "Variáveis extraídas do Kotlin DSL: $kotlin_dsl_vars"
+  debug_log "Propriedades extraídas do gradle.properties: $gradle_properties"      # Em arquivos Kotlin DSL, dependências podem usar property()
+  debug_log "Processando dependências no arquivo: $build_file"
   grep -E "(implementation|api|compile|runtime|testImplementation|testCompile)" "$build_file" | while read -r line; do
     # Remover comentários
     line=$(echo "$line" | sed 's/\/\/.*$//g')
-    
-    # Formato padrão Kotlin DSL: implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    debug_log "Processando linha: $line"      # Formato padrão Kotlin DSL: implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
     if [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+):([^\)\"]*)[\"\']? ]]; then
       local config="${BASH_REMATCH[1]}"
       local group="${BASH_REMATCH[2]}"
@@ -833,23 +836,79 @@ parse_kotlin_dsl_dependencies() {
       # Limpar versão removendo aspas extras e curly braces
       version=$(echo "$version" | tr -d '"' | tr -d "'" | sed 's/}$//' | sed 's/)$//')
       
+      # Registrar detalhes para debug
+      debug_log "Analisando dependência Kotlin DSL: $config($group:$name:$raw_version) da linha: $line"
+      
       # Detectar diferentes formatos de referência a propriedades/variáveis no Kotlin DSL
       
-      # Formato property("name")
-      if echo "$raw_version" | grep -q "property("; then
-        # Extrair o nome da propriedade
-        local prop_name=$(echo "$raw_version" | grep -oP 'property\(\s*["\x27]\K[^"\x27]+')
+      # Formato property("name") ou ${property("name")}
+      if [[ "$line" =~ property\( ]] || [[ "$line" =~ \$\{property\( ]]; then
+        # Extrair o nome da propriedade - suporta property("name") e ${property("name")}
+        debug_log "Linha contém property(): $line"
+        
+        local prop_name=""
+        
+        # Usar perl para extração avançada de regex - mais confiável para padrões complexos
+        if command -v perl &>/dev/null; then
+          # Tentar extrair ${property("nome")}
+          prop_name=$(echo "$line" | perl -ne 'if (/\$\{property\(\s*["\047]([^"\047]+)["\047]\s*\)\}/) {print "$1\n"; exit}')
+          
+          # Se não encontrou, tentar extrair property("nome")
+          if [ -z "$prop_name" ]; then
+            prop_name=$(echo "$line" | perl -ne 'if (/property\(\s*["\047]([^"\047]+)["\047]\s*\)/) {print "$1\n"; exit}')
+          fi
+          
+          debug_log "Extraído nome via perl: $prop_name"
+        else
+          # Fallback para bash regex se perl não estiver disponível
+          if [[ "$line" =~ \$\{property\([[:space:]]*[\"\']([^\"\']*)[\"\'][[:space:]]*\)\} ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+            debug_log "Extraído nome via regex BASH_REMATCH[1] de \${property()}: $prop_name"
+          elif [[ "$line" =~ property\([[:space:]]*[\"\']([^\"\']*)[\"\'][[:space:]]*\) ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+            debug_log "Extraído nome via regex BASH_REMATCH[1] de property(): $prop_name"
+          fi
+        fi
+        
+        # Se ainda não encontrou, tentar usar grep como último recurso
+        if [ -z "$prop_name" ]; then
+          prop_name=$(echo "$raw_version" | grep -oP 'property\(\s*["\047]\K[^"\047]+' 2>/dev/null || echo "")
+          if [ -z "$prop_name" ]; then
+            prop_name=$(echo "$raw_version" | grep -oP '\$\{property\(\s*["\047]\K[^"\047]+' 2>/dev/null || echo "")
+          fi
+          debug_log "Extraído nome via grep (último recurso): $prop_name"
+        fi
+        
+        debug_log "Tentando extrair property() de: $raw_version, nome encontrado: $prop_name"
+        
         if [ -n "$prop_name" ]; then
-          # Verificar no array de propriedades
-          if [ -n "${props[$prop_name]}" ]; then
-            version="${props[$prop_name]}"
-            log_debug "Propriedade property() $prop_name resolvida: $version"
-          # Buscar em gradle.properties como fallback
-          elif [ -f "$project_dir/gradle.properties" ]; then
-            local prop_value=$(grep -E "^${prop_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
+          # Buscar diretamente em gradle.properties primeiro (mais confiável)
+          if [ -f "$project_dir/gradle.properties" ]; then
+            # Usar grep mais preciso para garantir que estamos obtendo a linha correta
+            local prop_value=$(grep -E "^[[:space:]]*${prop_name}[[:space:]]*=" "$project_dir/gradle.properties" | head -1 | cut -d'=' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' 2>/dev/null)
             if [ -n "$prop_value" ]; then
+              # Remover aspas se existirem
+              prop_value=$(echo "$prop_value" | sed 's/^"//;s/"$//;s/^'\''//;s/'\''$//')
               version="$prop_value"
-              log_debug "Propriedade property() $prop_name do gradle.properties: $version"
+              debug_log "Propriedade $prop_name resolvida diretamente do gradle.properties: $version"
+              props["$prop_name"]="$prop_value"  # Adicionar ao cache de propriedades
+            # Verificar no array de propriedades como fallback
+            elif [ -n "${props[$prop_name]}" ]; then
+              version="${props[$prop_name]}"
+              debug_log "Propriedade $prop_name resolvida do cache de props: $version"
+            fi
+          fi
+          
+          # Se ainda não conseguimos resolver, tentar buscar como variável com outro nome
+          if [[ "$version" =~ property\( ]] || [[ "$version" =~ \$\{property\( ]]; then
+            # Tentar procurar com variações comuns de nomes (Version vs version)
+            local alt_name="${prop_name}Version"
+            if [ -n "${props[$alt_name]}" ]; then
+              version="${props[$alt_name]}"
+              debug_log "Propriedade resolvida usando nome alternativo $alt_name: $version"
+            else
+              debug_log "AVISO: Não foi possível resolver property() para $prop_name, marcando como não resolvida"
+              version="⚠️ Propriedade não resolvida: $prop_name"
             fi
           fi
         fi
@@ -879,18 +938,18 @@ parse_kotlin_dsl_dependencies() {
         fi
         
         if [ -n "$var_name" ]; then
-          log_debug "Tentando resolver variável Kotlin DSL: $var_name de versão $version"
+          debug_log "Tentando resolver variável Kotlin DSL: $var_name de versão $version"
           
           # Verificar no array de propriedades primeiro
           if [ -n "${props[$var_name]}" ]; then
             version="${props[$var_name]}"
-            log_debug "Variável $var_name resolvida do array de propriedades: $version"
+            debug_log "Variável $var_name resolvida do array de propriedades: $version"
           elif [ -f "$project_dir/gradle.properties" ]; then
             # Buscar diretamente do gradle.properties como fallback
             local prop_value=$(grep -E "^${var_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
             if [ -n "$prop_value" ]; then
               version="$prop_value"
-              log_debug "Variável $var_name resolvida do gradle.properties: $version"
+              debug_log "Variável $var_name resolvida do gradle.properties: $version"
             fi
           fi
         fi
@@ -898,7 +957,7 @@ parse_kotlin_dsl_dependencies() {
       
       # Se ainda não resolvemos a versão e ela parece ser uma variável
       if [[ "$version" == \$* ]]; then
-        log_debug "Ainda precisa resolver variável: $version"
+        debug_log "Ainda precisa resolver variável: $version"
         # Extrair nome da variável para log
         local var_display=""
         if [[ "$version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
@@ -910,14 +969,62 @@ parse_kotlin_dsl_dependencies() {
         # Tentativa final usando o array de propriedades
         if [ -n "$var_display" ] && [ -n "${props[$var_display]}" ]; then
           version="${props[$var_display]}"
-          log_debug "Variável $var_display resolvida na tentativa final: $version"
+          debug_log "Variável $var_display resolvida na tentativa final: $version"
         else
-          log_debug "Não foi possível resolver a variável $var_display"
+          debug_log "Não foi possível resolver a variável $var_display"
+        fi
+      fi
+      
+      # Verificar se a versão foi resolvida corretamente
+      if [[ "$version" =~ \$\{\{property\( ]] || [[ "$version" =~ \$\{property\( ]] || [[ "$version" =~ property\( ]]; then
+        # Extrair o nome da propriedade usando perl para melhor precisão
+        local prop_name=""
+        if command -v perl &>/dev/null; then
+          prop_name=$(echo "$version" | perl -ne 'if (/property\(\s*["\047]([^"\047]+)["\047]\s*\)/) {print "$1\n"; exit}' || \
+                      echo "$version" | perl -ne 'if (/\$\{property\(\s*["\047]([^"\047]+)["\047]\s*\)\}/) {print "$1\n"; exit}')
+        else
+          # Fallback para padrões se perl não estiver disponível
+          local prop_pattern1='property\([[:space:]]*["\x27]([^"\x27]+)["\x27][[:space:]]*\)'
+          local prop_pattern2='\$\{property\([[:space:]]*["\x27]([^"\x27]+)["\x27][[:space:]]*\)\}'
+          
+          if [[ "$version" =~ $prop_pattern1 ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+          elif [[ "$version" =~ $prop_pattern2 ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+          else
+            prop_name=$(echo "$version" | grep -oP 'property\(\s*["\x27]\K[^"\x27]+' 2>/dev/null || echo "")
+          fi
+        fi
+        
+        debug_log "Verificação final para propriedade não resolvida: $prop_name"
+        
+        if [ -n "$prop_name" ] && [ -f "$project_dir/gradle.properties" ]; then
+          debug_log "Tentativa final para $name buscando $prop_name em gradle.properties"
+          # Usar uma busca mais precisa
+          local final_value=$(grep -E "^[[:space:]]*${prop_name}[[:space:]]*=" "$project_dir/gradle.properties" | head -1 | cut -d'=' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' 2>/dev/null)
+          if [ -n "$final_value" ]; then
+            # Remover aspas se existirem
+            final_value=$(echo "$final_value" | sed 's/^"//;s/"$//;s/^'\''//;s/'\''$//')
+            version="$final_value"
+            debug_log "SUCESSO: Propriedade $prop_name resolvida para $name: $version"
+          else
+            # Tentar buscar versão caso o nome da propriedade termine com "version" ou "Version"
+            local version_prop_name="${prop_name}Version"
+            final_value=$(grep -E "^[[:space:]]*${version_prop_name}[[:space:]]*=" "$project_dir/gradle.properties" | head -1 | cut -d'=' -f2- | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' 2>/dev/null)
+            if [ -n "$final_value" ]; then
+              version="$final_value"
+              debug_log "SUCESSO: Propriedade alternativa $version_prop_name resolvida para $name: $version"
+            else
+              # Registrar versão não resolvida
+              version="⚠️ Propriedade não resolvida: $prop_name"
+              debug_log "AVISO: Não foi possível resolver versão para $name: $version"
+            fi
+          fi
         fi
       fi
       
       # Registrar a dependência encontrada e sua configuração
-      log_debug "Dependência: $config - $group:$name:$version"
+      debug_log "Dependência: $config - $group:$name:$version"
       
       echo "{\"group\":\"$group\",\"name\":\"$name\",\"version\":\"$version\",\"configuration\":\"$config\"}"
     fi
