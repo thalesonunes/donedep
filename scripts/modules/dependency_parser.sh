@@ -29,8 +29,9 @@ extract_version_variables() {
   
   # Extrair variáveis de diferentes lugares
   
-  # 1. Variáveis locais ou globais (def, val, const, var, etc.)
+  # Padres para extração de variáveis, propriedades e dependências
   local var_patterns=(
+    # 1. PADRÕES PARA VERSÕES EM ARQUIVOS GROOVY/GRADLE
     # Padrão para Groovy/Gradle: def someVersion = "1.2.3"
     "^[[:space:]]*(def|val|const|final|var)[[:space:]]+[a-zA-Z0-9_]+(Version|_VERSION)[[:space:]]*=[[:space:]]*['\"]([^'\"]+)"
     # Padrão para propriedades simples: someVersion = "1.2.3"
@@ -39,6 +40,28 @@ extract_version_variables() {
     "ext\.[a-zA-Z0-9_]+(Version|_VERSION)[[:space:]]*=[[:space:]]*['\"]([^'\"]+)"
     # Padrão para blocos ext { }
     "^[[:space:]]*[a-zA-Z0-9_]+(Version|_VERSION)[[:space:]]*=[[:space:]]*['\"]([^'\"]+)"
+    
+    # 2. PADRÕES PARA KOTLIN DSL ${property("name")}
+    # Padrão para ${property("nomeDaPropriedade")} - com aspas duplas
+    '\$\{property\([[:space:]]*"([^"]+)"[[:space:]]*\)\}'
+    # Padrão para ${property('nomeDaPropriedade')} - com aspas simples
+    "\$\\{property\\([[:space:]]*'([^']+)'[[:space:]]*\\)\\}"
+    # Padrão para property("nomeDaPropriedade") - com aspas duplas
+    'property\([[:space:]]*"([^"]+)"[[:space:]]*\)'
+    # Padrão para property('nomeDaPropriedade') - com aspas simples
+    "property\\([[:space:]]*'([^']+)'[[:space:]]*\\)"
+    
+    # 3. PADRÕES PARA VARIÁVEIS DIRETAS EM KOTLIN/GROOVY
+    # Padrão para $variableName
+    '\$([a-zA-Z0-9_]+)'
+    # Padrão para ${variableName}
+    '\$\{([a-zA-Z0-9_]+)\}'
+    
+    # 4. PADRÕES PARA VERSION CATALOG (GRADLE 7+)
+    # Padrão para libs.versions.xxx
+    'libs\.versions\.([a-zA-Z0-9_.]+)'
+    # Padrão para libs.xxx.get()
+    'libs\.([a-zA-Z0-9_.]+)\.get\(\)'
   )
   
   # Incluir todos os arquivos extras relevantes
@@ -847,9 +870,22 @@ parse_kotlin_dsl_dependencies() {
         debug_log "Linha contém property(): $line"
         
         local prop_name=""
+        # Tentar extrair usando os padrões definidos no var_patterns
+        for pattern in "${var_patterns[@]}"; do
+          # Ignorar padrões que não são relacionados a property()
+          if [[ "$pattern" != *"property"* ]]; then
+            continue
+          fi
+          
+          if [[ "$line" =~ $pattern ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+            debug_log "Propriedade extraída usando padrão: '$pattern' = $prop_name"
+            break
+          fi
+        done
         
-        # Usar perl para extração avançada de regex - mais confiável para padrões complexos
-        if command -v perl &>/dev/null; then
+        # Se não conseguiu extrair com patterns, tentar com perl (mais poderoso)
+        if [ -z "$prop_name" ] && command -v perl &>/dev/null; then
           # Tentar extrair ${property("nome")}
           prop_name=$(echo "$line" | perl -ne 'if (/\$\{property\(\s*["\047]([^"\047]+)["\047]\s*\)\}/) {print "$1\n"; exit}')
           
@@ -859,15 +895,6 @@ parse_kotlin_dsl_dependencies() {
           fi
           
           debug_log "Extraído nome via perl: $prop_name"
-        else
-          # Fallback para bash regex se perl não estiver disponível
-          if [[ "$line" =~ \$\{property\([[:space:]]*[\"\']([^\"\']*)[\"\'][[:space:]]*\)\} ]]; then
-            prop_name="${BASH_REMATCH[1]}"
-            debug_log "Extraído nome via regex BASH_REMATCH[1] de \${property()}: $prop_name"
-          elif [[ "$line" =~ property\([[:space:]]*[\"\']([^\"\']*)[\"\'][[:space:]]*\) ]]; then
-            prop_name="${BASH_REMATCH[1]}"
-            debug_log "Extraído nome via regex BASH_REMATCH[1] de property(): $prop_name"
-          fi
         fi
         
         # Se ainda não encontrou, tentar usar grep como último recurso
@@ -912,9 +939,28 @@ parse_kotlin_dsl_dependencies() {
             fi
           fi
         fi
-      # Formato libs.xxx.get() do Gradle Version Catalog 
-      elif [[ "$raw_version" =~ libs\.([a-zA-Z0-9_.]+)\.get\(\) ]]; then
-        local lib_name="${BASH_REMATCH[1]}"
+      # Formato libs.xxx.get() do Gradle Version Catalog
+      elif [[ "$raw_version" =~ libs\. ]]; then
+        local lib_name=""
+        
+        # Percorrer os padrões relacionados a Version Catalog
+        for pattern in "${var_patterns[@]}"; do
+          # Usar apenas padrões para Version Catalog
+          if [[ "$pattern" != *"libs."* ]]; then
+            continue
+          fi
+          
+          if [[ "$raw_version" =~ $pattern ]]; then
+            lib_name="${BASH_REMATCH[1]}"
+            debug_log "Nome de biblioteca extraído usando padrão: '$pattern' = $lib_name"
+            break
+          fi
+        done
+        
+        # Fallback para o padrão original
+        if [ -z "$lib_name" ] && [[ "$raw_version" =~ libs\.([a-zA-Z0-9_.]+)\.get\(\) ]]; then
+          lib_name="${BASH_REMATCH[1]}"
+        fi
         
         # Procurar em arquivos TOML de version catalog
         if [ -d "$project_dir/gradle" ]; then
@@ -929,12 +975,30 @@ parse_kotlin_dsl_dependencies() {
         fi
       # Se for uma variável direta do Kotlin ${varName} ou $varName
       elif [[ "$version" == \$* ]]; then
-        # Extrair nome da variável
+        # Extrair nome da variável usando os padrões definidos em var_patterns
         local var_name=""
-        if [[ "$version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
-          var_name="${BASH_REMATCH[1]}"
-        elif [[ "$version" =~ \$([a-zA-Z0-9_]+) ]]; then
-          var_name="${BASH_REMATCH[1]}"
+        
+        # Percorrer os padrões relacionados a variáveis diretas
+        for pattern in "${var_patterns[@]}"; do
+          # Usar apenas padrões que começam com $ (variáveis diretas)
+          if [[ "$pattern" != \$* ]]; then
+            continue
+          fi
+          
+          if [[ "$version" =~ $pattern ]]; then
+            var_name="${BASH_REMATCH[1]}"
+            debug_log "Variável direta extraída usando padrão: '$pattern' = $var_name"
+            break
+          fi
+        done
+        
+        # Fallback para os padrões originais se não conseguiu extrair
+        if [ -z "$var_name" ]; then
+          if [[ "$version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
+            var_name="${BASH_REMATCH[1]}"
+          elif [[ "$version" =~ \$([a-zA-Z0-9_]+) ]]; then
+            var_name="${BASH_REMATCH[1]}"
+          fi
         fi
         
         if [ -n "$var_name" ]; then
@@ -977,23 +1041,34 @@ parse_kotlin_dsl_dependencies() {
       
       # Verificar se a versão foi resolvida corretamente
       if [[ "$version" =~ \$\{\{property\( ]] || [[ "$version" =~ \$\{property\( ]] || [[ "$version" =~ property\( ]]; then
-        # Extrair o nome da propriedade usando perl para melhor precisão
+        # Extrair o nome da propriedade usando os padrões definidos em var_patterns
         local prop_name=""
-        if command -v perl &>/dev/null; then
+        
+        # Percorrer os padrões relacionados a property()
+        for pattern in "${var_patterns[@]}"; do
+          # Ignorar padrões que não são relacionados a property()
+          if [[ "$pattern" != *"property"* ]]; then
+            continue
+          fi
+          
+          if [[ "$version" =~ $pattern ]]; then
+            prop_name="${BASH_REMATCH[1]}"
+            debug_log "Propriedade extraída na verificação final usando padrão: '$pattern' = $prop_name"
+            break
+          fi
+        done
+        
+        # Se não conseguiu extrair com patterns, tentar com perl
+        if [ -z "$prop_name" ] && command -v perl &>/dev/null; then
           prop_name=$(echo "$version" | perl -ne 'if (/property\(\s*["\047]([^"\047]+)["\047]\s*\)/) {print "$1\n"; exit}' || \
                       echo "$version" | perl -ne 'if (/\$\{property\(\s*["\047]([^"\047]+)["\047]\s*\)\}/) {print "$1\n"; exit}')
-        else
-          # Fallback para padrões se perl não estiver disponível
-          local prop_pattern1='property\([[:space:]]*["\x27]([^"\x27]+)["\x27][[:space:]]*\)'
-          local prop_pattern2='\$\{property\([[:space:]]*["\x27]([^"\x27]+)["\x27][[:space:]]*\)\}'
-          
-          if [[ "$version" =~ $prop_pattern1 ]]; then
-            prop_name="${BASH_REMATCH[1]}"
-          elif [[ "$version" =~ $prop_pattern2 ]]; then
-            prop_name="${BASH_REMATCH[1]}"
-          else
-            prop_name=$(echo "$version" | grep -oP 'property\(\s*["\x27]\K[^"\x27]+' 2>/dev/null || echo "")
-          fi
+          debug_log "Propriedade extraída na verificação final usando perl: $prop_name"
+        fi
+        
+        # Fallback para grep como último recurso
+        if [ -z "$prop_name" ]; then
+          prop_name=$(echo "$version" | grep -oP 'property\(\s*["\x27]\K[^"\x27]+' 2>/dev/null || echo "")
+          debug_log "Propriedade extraída na verificação final usando grep: $prop_name"
         fi
         
         debug_log "Verificação final para propriedade não resolvida: $prop_name"
