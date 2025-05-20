@@ -593,109 +593,6 @@ parse_gradle_dependencies() {
 }
 
 # Analisar dependências do Kotlin DSL (build.gradle.kts)
-parse_kotlin_dsl_dependencies() {
-  local build_file="$1"
-  local version_vars="$2"
-  local project_dir="$3"
-  local project_context="$4"
-  
-  # Primeiro extrair variáveis específicas do Kotlin DSL
-  local kotlin_dsl_vars="{}"
-  
-  # Procurar por padrões como val kotlinVersion = "1.7.10"
-  while IFS= read -r line; do
-    if [[ "$line" =~ (val|const|var)[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
-      local var_name="${BASH_REMATCH[2]}"
-      local var_value="${BASH_REMATCH[3]}"
-      
-      # Adicionar ao objeto JSON
-      kotlin_dsl_vars=$(echo "$kotlin_dsl_vars" | jq --arg name "$var_name" --arg value "$var_value" '. + {($name): $value}' 2>/dev/null || echo "$kotlin_dsl_vars")
-    fi
-  done < "$build_file"
-  
-  log_debug "Variáveis extraídas do Kotlin DSL: $kotlin_dsl_vars"
-  
-  # Em arquivos Kotlin DSL, dependências podem usar property()
-  grep -E "(implementation|api|compile|runtime|testImplementation|testCompile)" "$build_file" | while read -r line; do
-    # Remover comentários
-    line=$(echo "$line" | sed 's/\/\/.*$//g')
-    
-    # Formato para implementação com property: implementation("net.logstash.logback:logstash-logback-encoder:${property("logbackEncoderVersion")}")
-    if [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+):(.*)\) ]]; then
-      local config="${BASH_REMATCH[1]}"
-      local group="${BASH_REMATCH[2]}"
-      local name="${BASH_REMATCH[3]}"
-      local raw_version="${BASH_REMATCH[4]}"
-      local version="$raw_version"
-      
-      # Limpar versão removendo aspas extras e curly braces
-      version=$(echo "$version" | tr -d '\"' | tr -d '\'' | sed 's/}$//')
-      
-      # Detectar diferentes formatos de referência a propriedades/variáveis no Kotlin DSL
-      
-      # Formato property("name") ou o novo formato libs.versions.toml
-      if [[ "$raw_version" =~ property\([\"\'](.*)[\"\']\) ]]; then
-        local prop_name="${BASH_REMATCH[1]}"
-        
-        # Buscar em gradle.properties
-        if [ -f "$project_dir/gradle.properties" ]; then
-          local prop_value=$(grep -E "^${prop_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
-          if [ -n "$prop_value" ]; then
-            version="$prop_value"
-          fi
-        fi
-      # Formato libs.xxx.get() do Gradle Version Catalog 
-      elif [[ "$raw_version" =~ libs\.([a-zA-Z0-9_.]+)\.get\(\) ]]; then
-        local lib_name="${BASH_REMATCH[1]}"
-        
-        # Procurar em arquivos TOML de version catalog
-        if [ -d "$project_dir/gradle" ]; then
-          local toml_files=($(find "$project_dir/gradle" -name "*.toml" 2>/dev/null))
-          for toml_file in "${toml_files[@]}"; do
-            local version_value=$(grep -A50 "^\[versions\]" "$toml_file" | grep -m1 "$lib_name" | grep -oP '=\s*"\K[^"]+')
-            if [ -n "$version_value" ]; then
-              version="$version_value"
-              break
-            fi
-          done
-        fi
-      # Se for uma variável direta do Kotlin ${varName} ou $varName
-      elif [[ "$raw_version" =~ \$\{([a-zA-Z0-9_]+)\} ]] || [[ "$raw_version" =~ \$([a-zA-Z0-9_]+) ]]; then
-        local var_name="${BASH_REMATCH[1]}"
-        
-        # Primeiro verificar nas variáveis extraídas do próprio arquivo .kts
-        local kt_var_value=$(echo "$kotlin_dsl_vars" | jq -r ".$var_name // empty" 2>/dev/null)
-        if [ -n "$kt_var_value" ]; then
-          version="$kt_var_value"
-          log_debug "Variável $var_name resolvida do Kotlin DSL: $version"
-        else
-          # Tentar resolver como propriedade do gradle.properties
-          if [ -f "$project_dir/gradle.properties" ]; then
-            local prop_value=$(grep -E "^${var_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
-            if [ -n "$prop_value" ]; then
-              version="$prop_value"
-            else
-              # Tentar resolver usando a função padrão
-              local raw_var
-              if [[ "$raw_version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
-                raw_var="\${$var_name}"
-              else
-                raw_var="\$$var_name"
-              fi
-              
-              local resolved_version=$(resolve_version_variable "$raw_var" "$project_dir" "$project_context")
-              if [ -n "$resolved_version" ] && [ "$resolved_version" != "$raw_var" ]; then
-                version="$resolved_version"
-              fi
-            fi
-          fi
-        fi
-      fi
-      
-      echo "{\"group\":\"$group\",\"name\":\"$name\",\"version\":\"$version\",\"configuration\":\"$config\"}"
-    fi
-  done
-}
 
 # Analisar catálogos de versão do Gradle
 parse_gradle_catalog() {
@@ -816,6 +713,43 @@ parse_maven_dependencies() {
   done < "$pom_file"
 }
 
+# Extrair todas as propriedades do gradle.properties
+extract_gradle_properties() {
+  local project_dir="$1"
+  local properties_file="$project_dir/gradle.properties"
+  local properties="{}"
+  
+  if [ -f "$properties_file" ]; then
+    echo "Lendo propriedades de $properties_file" >> "$LOG_FILE" 2>&1
+    
+    while IFS= read -r line; do
+      # Ignorar linhas vazias e comentários
+      if [[ "$line" =~ ^[[:space:]]*$ ]] || [[ "$line" =~ ^[[:space:]]*# ]]; then
+        continue
+      fi
+      
+      # Extrair pares chave=valor
+      if [[ "$line" =~ ^([a-zA-Z0-9_.]+)[[:space:]]*=[[:space:]]*(.*) ]]; then
+        local key="${BASH_REMATCH[1]}"
+        local value="${BASH_REMATCH[2]}"
+        
+        # Remover espaços em branco e comentários
+        value=$(echo "$value" | sed 's/#.*$//' | tr -d ' ')
+        
+        # Adicionar à string de propriedades (simples)
+        properties="$properties\"$key\":\"$value\","
+        echo "Extraída propriedade: $key = $value" >> "$LOG_FILE" 2>&1
+      fi
+    done < "$properties_file"
+    
+    # Remover a última vírgula e fechar o objeto JSON
+    properties="${properties%,}"
+    properties="{$properties}"
+  fi
+  
+  echo "$properties"
+}
+
 # Executar o script se for chamado diretamente
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
   # Se o primeiro argumento for um comando conhecido, executá-lo
@@ -836,3 +770,156 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
       ;;
   esac
 fi
+# Analisar dependências do Kotlin DSL (build.gradle.kts)
+parse_kotlin_dsl_dependencies() {
+  local build_file="$1"
+  local version_vars="$2"
+  local project_dir="$3"
+  local project_context="$4"
+  
+  # Primeiro extrair variáveis específicas do Kotlin DSL e do gradle.properties
+  local kotlin_dsl_vars="{}"
+  local gradle_properties=$(extract_gradle_properties "$project_dir")
+  
+  # Criar um array associativo para as propriedades gradle
+  declare -A props
+  
+  # Carregar propriedades do gradle.properties
+  if [ -f "$project_dir/gradle.properties" ]; then
+    while IFS='=' read -r key value; do
+      # Ignorar linhas vazias ou comentários
+      [[ -z "$key" || "$key" =~ ^[[:space:]]*# ]] && continue
+      
+      # Remover espaços em branco
+      key=$(echo "$key" | xargs)
+      value=$(echo "$value" | xargs)
+      
+      # Armazenar no array
+      props["$key"]="$value"
+      log_debug "Propriedade gradle carregada: $key = $value"
+    done < "$project_dir/gradle.properties"
+  fi
+  
+  # Procurar por padrões como val kotlinVersion = "1.7.10"
+  while IFS= read -r line; do
+    if [[ "$line" =~ (val|const|var)[[:space:]]+([a-zA-Z0-9_]+)[[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+      local var_name="${BASH_REMATCH[2]}"
+      local var_value="${BASH_REMATCH[3]}"
+      
+      # Adicionar ao objeto JSON
+      kotlin_dsl_vars=$(echo "$kotlin_dsl_vars" | jq --arg name "$var_name" --arg value "$var_value" '. + {($name): $value}' 2>/dev/null || echo "$kotlin_dsl_vars")
+      
+      # Adicionar também ao array props para uso posterior
+      props["$var_name"]="$var_value"
+    fi
+  done < "$build_file"
+  
+  log_debug "Variáveis extraídas do Kotlin DSL: $kotlin_dsl_vars"
+  log_debug "Propriedades extraídas do gradle.properties: $gradle_properties"
+  
+  # Em arquivos Kotlin DSL, dependências podem usar property()
+  grep -E "(implementation|api|compile|runtime|testImplementation|testCompile)" "$build_file" | while read -r line; do
+    # Remover comentários
+    line=$(echo "$line" | sed 's/\/\/.*$//g')
+    
+    # Formato padrão Kotlin DSL: implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    if [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+):([^\)\"]*)[\"\']? ]]; then
+      local config="${BASH_REMATCH[1]}"
+      local group="${BASH_REMATCH[2]}"
+      local name="${BASH_REMATCH[3]}"
+      local raw_version="${BASH_REMATCH[4]}"
+      local version="$raw_version"
+      
+      # Limpar versão removendo aspas extras e curly braces
+      version=$(echo "$version" | tr -d '"' | tr -d "'" | sed 's/}$//' | sed 's/)$//')
+      
+      # Detectar diferentes formatos de referência a propriedades/variáveis no Kotlin DSL
+      
+      # Formato property("name")
+      if echo "$raw_version" | grep -q "property("; then
+        # Extrair o nome da propriedade
+        local prop_name=$(echo "$raw_version" | grep -oP 'property\(\s*["\x27]\K[^"\x27]+')
+        if [ -n "$prop_name" ]; then
+          # Verificar no array de propriedades
+          if [ -n "${props[$prop_name]}" ]; then
+            version="${props[$prop_name]}"
+            log_debug "Propriedade property() $prop_name resolvida: $version"
+          # Buscar em gradle.properties como fallback
+          elif [ -f "$project_dir/gradle.properties" ]; then
+            local prop_value=$(grep -E "^${prop_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
+            if [ -n "$prop_value" ]; then
+              version="$prop_value"
+              log_debug "Propriedade property() $prop_name do gradle.properties: $version"
+            fi
+          fi
+        fi
+      # Formato libs.xxx.get() do Gradle Version Catalog 
+      elif [[ "$raw_version" =~ libs\.([a-zA-Z0-9_.]+)\.get\(\) ]]; then
+        local lib_name="${BASH_REMATCH[1]}"
+        
+        # Procurar em arquivos TOML de version catalog
+        if [ -d "$project_dir/gradle" ]; then
+          local toml_files=($(find "$project_dir/gradle" -name "*.toml" 2>/dev/null))
+          for toml_file in "${toml_files[@]}"; do
+            local version_value=$(grep -A50 "^\[versions\]" "$toml_file" | grep -m1 "$lib_name" | grep -oP '=\s*"\K[^"]+')
+            if [ -n "$version_value" ]; then
+              version="$version_value"
+              break
+            fi
+          done
+        fi
+      # Se for uma variável direta do Kotlin ${varName} ou $varName
+      elif [[ "$version" == \$* ]]; then
+        # Extrair nome da variável
+        local var_name=""
+        if [[ "$version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
+          var_name="${BASH_REMATCH[1]}"
+        elif [[ "$version" =~ \$([a-zA-Z0-9_]+) ]]; then
+          var_name="${BASH_REMATCH[1]}"
+        fi
+        
+        if [ -n "$var_name" ]; then
+          log_debug "Tentando resolver variável Kotlin DSL: $var_name de versão $version"
+          
+          # Verificar no array de propriedades primeiro
+          if [ -n "${props[$var_name]}" ]; then
+            version="${props[$var_name]}"
+            log_debug "Variável $var_name resolvida do array de propriedades: $version"
+          elif [ -f "$project_dir/gradle.properties" ]; then
+            # Buscar diretamente do gradle.properties como fallback
+            local prop_value=$(grep -E "^${var_name}\\s*=" "$project_dir/gradle.properties" | cut -d'=' -f2- | tr -d ' ' 2>/dev/null)
+            if [ -n "$prop_value" ]; then
+              version="$prop_value"
+              log_debug "Variável $var_name resolvida do gradle.properties: $version"
+            fi
+          fi
+        fi
+      fi
+      
+      # Se ainda não resolvemos a versão e ela parece ser uma variável
+      if [[ "$version" == \$* ]]; then
+        log_debug "Ainda precisa resolver variável: $version"
+        # Extrair nome da variável para log
+        local var_display=""
+        if [[ "$version" =~ \$\{([a-zA-Z0-9_]+)\} ]]; then
+          var_display="${BASH_REMATCH[1]}"
+        elif [[ "$version" =~ \$([a-zA-Z0-9_]+) ]]; then
+          var_display="${BASH_REMATCH[1]}"
+        fi
+        
+        # Tentativa final usando o array de propriedades
+        if [ -n "$var_display" ] && [ -n "${props[$var_display]}" ]; then
+          version="${props[$var_display]}"
+          log_debug "Variável $var_display resolvida na tentativa final: $version"
+        else
+          log_debug "Não foi possível resolver a variável $var_display"
+        fi
+      fi
+      
+      # Registrar a dependência encontrada e sua configuração
+      log_debug "Dependência: $config - $group:$name:$version"
+      
+      echo "{\"group\":\"$group\",\"name\":\"$name\",\"version\":\"$version\",\"configuration\":\"$config\"}"
+    fi
+  done
+}

@@ -8,6 +8,11 @@
 # Importar módulos comuns
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
+# Definir LOG_FILE se não estiver definido
+if [ -z "$LOG_FILE" ]; then
+  LOG_FILE="/tmp/jone_dep_extraction.log"
+fi
+
 # Extrair versão do Java
 extract_java_version() {
   local project_dir="$1"
@@ -75,17 +80,19 @@ extract_java_version() {
       
       # Procurar padrões tradicionais de definição de versão Java em Gradle
       # Buscar declaração de compatibilidade Java
-      # Primeiro verificar o padrão simples sourceCompatibility = 17 diretamente (evitando cat e pipe)
-      if grep -q "sourceCompatibility\s*=\s*[0-9]\+" "$gradle_file"; then
+      
+      # Primeiro verificar o formato 1.x (mais específico) para evitar extração incorreta
+      if grep -q "sourceCompatibility\s*=\s*1\.[0-9]\+" "$gradle_file"; then
+        java_version=$(grep -oP "sourceCompatibility\s*=\s*1\.\K[0-9]+" "$gradle_file" | sed -E 's/([0-9]+).*/1.\1/g' | head -1)
+        echo "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
+        echo "DEBUG: Extraído Java versão $java_version de sourceCompatibility 1.x em $gradle_file" >> /tmp/java_debug.log
+      # Depois verificar o padrão simples sourceCompatibility = 17 diretamente
+      elif grep -q "sourceCompatibility\s*=\s*[0-9]\+" "$gradle_file"; then
         # Extrair número diretamente usando grep -oP
         java_version=$(grep -oP "sourceCompatibility\s*=\s*\K[0-9]+" "$gradle_file" | head -1)
         echo "Encontrado sourceCompatibility número direto em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
         # Debug
         echo "DEBUG: Extraído Java versão $java_version de sourceCompatibility direto em $gradle_file" >> /tmp/java_debug.log
-      # Depois verificar o formato 1.x
-      elif grep -q "sourceCompatibility.*1\.[0-9]\+" "$gradle_file"; then
-        java_version=$(grep -oP "sourceCompatibility.*1\.\K[0-9]+" "$gradle_file" | sed -E 's/([0-9]+).*/1.\1/g' | head -1)
-        echo "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version" >> "$LOG_FILE" 2>&1
       # CORRIGIDO: Verificar blocos java { sourceCompatibility = JavaVersion.VERSION_XX }
       elif grep -q "java\s*{" "$gradle_file"; then
         echo "Encontrado bloco java { } em $gradle_file" >> "$LOG_FILE" 2>&1
