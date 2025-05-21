@@ -674,10 +674,8 @@ function renderDependencies() {
     const anyFilterActive = Object.values(activeFilters).some(v => v);
     
     if (dep.projects && Array.isArray(dep.projects) && dep.projects.length > 0) {
-      if (dep.projects.length === 1 || anyFilterActive) {
+      if (dep.projects && dep.projects.length > 0) {
         projectsHtml = `<div class="dependency-projects">${dep.projects.join(', ')}</div>`;
-      } else if (dep.projects.length > 1) {
-        projectsHtml = `<div class="dependency-projects">${dep.projects.join(',\n')}</div>`;
       }
     }
     
@@ -688,7 +686,6 @@ function renderDependencies() {
         <span class="${versionClass}" id="version-${dep.id || Math.random().toString(36).substring(2)}">${escapeHTML(dep.version)}</span>
         ${warningInfo}
       </div>
-      ${projectsHtml}
       <div class="copy-buttons">
         <button class="copy-button" title="Copiar formato Gradle"
           data-format="gradle" 
@@ -707,6 +704,7 @@ function renderDependencies() {
           <span class="button-text">Maven</span>
         </button>
       </div>
+      ${projectsHtml}
     `;
     dependenciesGrid.appendChild(card);
     
@@ -914,6 +912,59 @@ function updateActiveFilter(id, value) {
   // Atualizar o filtro ativo
   activeFilters[actualKey] = value || null;
   
+  // Atualizar as opções disponíveis nos outros filtros
+  updateAllDropdowns();
+  
   // Recarregar as dependências para refletir a mudança
   renderDependencies();
+
+  // Atualizar a lista de projetos filtrados
+  const filteredProjects = getFilteredProjects();
+  updateFilteredProjects(filteredProjects);
+}
+
+function getFilteredProjects() {
+  // Usar window._allProjects que já foi filtrado
+  const projects = window._allProjects || [];
+  let filteredProjects = [];
+
+  try {
+    // Processar projetos com os mesmos filtros
+    projects.forEach(project => {
+      if (!project) return;
+      
+      // Verificar se o projeto passa pelos filtros ativos
+      let passesFilters = true;
+      for (const [filterType, filterValue] of Object.entries(activeFilters)) {
+        if (filterValue) {
+          // Tratamento especial para o valor "Nenhum" do Kotlin
+          if (filterType === 'kotlin' && filterValue === 'Nenhum') {
+            if (project.requirements && project.requirements[filterType] !== null && project.requirements[filterType] !== undefined) {
+              passesFilters = false;
+              break;
+            }
+          } else if (!project.requirements || project.requirements[filterType] !== filterValue) {
+            passesFilters = false;
+            break;
+          }
+        }
+      }
+
+      if (passesFilters) {
+        filteredProjects.push(project);
+      }
+    });
+
+    // Aplicar filtro de busca se existir
+    if (searchTerm) {
+      filteredProjects = filteredProjects.filter(project => 
+        project.project && project.project.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+  } catch (error) {
+    console.error("Erro ao filtrar projetos:", error);
+    filteredProjects = [];
+  }
+
+  return filteredProjects;
 }

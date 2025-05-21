@@ -270,7 +270,7 @@ select.filter-dropdown:disabled + .filter-group label {
 .dependency-card {
   background-color: #000000;
   border-radius: 20px;
-  padding: 25px 10px;
+  padding: 25px 20px 10px 20px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -338,17 +338,29 @@ select.filter-dropdown:disabled + .filter-group label {
 .dependency-projects {
   font-family: 'Roboto Mono', monospace;
   font-weight: 400;
-  font-size: 16px;
+  font-size: 14px;
   text-align: center;
   color: #737373;
-  margin: 8px 10px 16px 10px;
-  padding: 8px;
-  line-height: 1.5;
+  margin-top: 16px;
+  padding: 12px 16px;  /* Adjusted padding for better spacing */
+  line-height: 1.6;    /* Adjusted line height for readability */
   width: 100%;
-  white-space: pre-wrap;
+  white-space: normal;  /* Changed from pre-wrap to normal */
   word-wrap: break-word;
   border-radius: 8px;
-  background-color: #111111;
+  opacity: 0.8;
+  position: relative;
+}
+
+.dependency-projects::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 1px;
+  background-color: #2a2a2a;
 }
 
 .version.resolved-variable::after {
@@ -368,6 +380,7 @@ select.filter-dropdown:disabled + .filter-group label {
   align-items: center;
   justify-content: center;
   transition: opacity 0.2s;
+  margin-bottom: 10px;
 }
 .copy-button:hover {
   opacity: 0.7;
