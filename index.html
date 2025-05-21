@@ -10,6 +10,7 @@
   <!-- Material Symbols Icons -->
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200">
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/filtered-projects.css">
 </head>
 <body>
   <div class="app-container">
@@ -73,6 +74,14 @@
       </div>
     </div>
 
+    <div class="filtered-projects" id="filtered-projects">
+      <div class="filtered-projects-header">
+        <span class="filtered-projects-title">Projetos encontrados:</span>
+        <span class="filtered-projects-count" id="filtered-projects-count">0</span>
+      </div>
+      <div class="filtered-projects-list" id="filtered-projects-list"></div>
+    </div>
+
     <div class="search-container">
       <input type="text" class="search-input" id="search-input" placeholder="Qual dependência desejar buscar?">
     </div>
@@ -91,6 +100,7 @@
   </div>
   <script src="js/dependency-helper.js"></script>
   <script src="js/data-adapter.js"></script>
+  <script src="js/filtered-projects.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

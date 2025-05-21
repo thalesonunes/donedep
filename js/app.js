@@ -345,6 +345,9 @@ async function loadDependencies() {
     
     initializeFilters();
     renderDependencies();
+    // Inicializar a lista de projetos com todos os projetos
+    const filteredProjects = getFilteredProjects();
+    updateFilteredProjects(filteredProjects);
     setupEventListeners();
   } catch (error) {
     // Exibir mensagem de erro mais detalhada na interface
@@ -563,6 +566,10 @@ function clearAllFilters() {
   
   // Renderizar todas as dependências
   renderDependencies();
+
+  // Atualizar lista de projetos filtrados
+  const filteredProjects = getFilteredProjects();
+  updateFilteredProjects(filteredProjects);
   
   console.log("Filtros limpos com sucesso");
 }
@@ -586,6 +593,10 @@ function setupEventListeners() {
       
       // Renderizar dependências com os novos filtros
       renderDependencies();
+
+      // Atualizar lista de projetos filtrados
+      const filteredProjects = getFilteredProjects();
+      updateFilteredProjects(filteredProjects);
       
       console.log(`Filtro ${filterKey} alterado para: ${activeFilters[filterKey]}`);
     });
