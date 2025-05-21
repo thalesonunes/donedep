@@ -357,21 +357,70 @@ extract_spring_boot_version() {
     "$project_dir/gradle.properties"
   )
   
+  debug_log "Extraindo Spring Boot version do projeto $(basename "$project_dir")"
+  
+  # Primeiro tentar ler do gradle.properties já que é o mais direto
+  if [ -f "$project_dir/gradle.properties" ]; then
+    debug_log "Procurando springBootVersion em gradle.properties"
+    if grep -q "^springBootVersion=" "$project_dir/gradle.properties"; then
+      spring_boot_version=$(grep "^springBootVersion=" "$project_dir/gradle.properties" | cut -d'=' -f2 | tr -d '[:space:]' | tr -d '"')
+      debug_log "Encontrado springBootVersion=$spring_boot_version em gradle.properties"
+      if [ -n "$spring_boot_version" ]; then
+        echo "$spring_boot_version"
+        return 0
+      fi
+    fi
+  fi
+  
+  # Se não encontrou no gradle.properties, procurar nos outros arquivos
   for gradle_file in "${gradle_files[@]}"; do
     if [ -f "$gradle_file" ]; then
-      # Procurar padrões comuns de definição da versão Spring Boot
-      if grep -q "spring-boot" "$gradle_file" && grep -q "version" "$gradle_file"; then
-        if grep -q "springBootVersion" "$gradle_file"; then
-          spring_boot_version=$(grep -oP "springBootVersion\s*=\s*['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
-        elif grep -q "id[[:space:]]*('|\")org.springframework.boot" "$gradle_file" || grep -q "id[[:space:]]*('|\")spring-boot" "$gradle_file"; then
+      debug_log "Processando arquivo $gradle_file"
+      
+      # Verificar dependências diretas do Spring Boot (implementation/compile)
+      if grep -q "org\.springframework\.boot:spring-boot-starter[^:]*:[0-9]" "$gradle_file"; then
+        spring_boot_version=$(grep -oP "org\.springframework\.boot:spring-boot-starter[^:]*:\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+        debug_log "Encontrado versão nas dependências diretas: $spring_boot_version"
+      fi
+      
+      # Se não encontrou na dependência direta, tentar outros padrões
+      if [ -z "$spring_boot_version" ]; then
+        # Verificar pelo plugin do Spring Boot
+        if grep -q "id[[:space:]]*('|\")org.springframework.boot['\"]" "$gradle_file"; then
           spring_boot_version=$(grep -oP "id(\s*\(\s*|\s+)['\"]org\.springframework\.boot[^'\"]*['\"][^'\"]*['\"](\s*\))?\s+version\s+['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
-        elif grep -q "spring-boot-starter" "$gradle_file"; then
-          spring_boot_version=$(grep -oP "['\"]org\.springframework\.boot:spring-boot-starter[^'\"]*['\"](,\s*)['\"]?\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          debug_log "Encontrado versão no plugin: $spring_boot_version"
+        fi
+      fi
+      
+      # Verificar padrão comum de springBootVersion
+      if [ -z "$spring_boot_version" ] && grep -q "springBootVersion" "$gradle_file"; then
+        spring_boot_version=$(grep -oP "springBootVersion\s*=\s*['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+        debug_log "Encontrado versão na variável springBootVersion: $spring_boot_version"
+      fi
+      
+      # Verificar dependências implementadas com version separado
+      if [ -z "$spring_boot_version" ]; then
+        if grep -q "implementation.*org\.springframework\.boot:spring-boot-starter.*:" "$gradle_file" || \
+           grep -q "compile.*org\.springframework\.boot:spring-boot-starter.*:" "$gradle_file"; then
+          local version_line=$(grep -A5 -B5 "org\.springframework\.boot:spring-boot-starter.*:" "$gradle_file" | grep -oP "version\s*=\s*['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?")
+          if [ -n "$version_line" ]; then
+            spring_boot_version="$version_line"
+            debug_log "Encontrado versão nas dependências com version separado: $spring_boot_version"
+          fi
+        fi
+      fi
+      
+      # Verificar dependências do starter em diferentes formatos
+      if [ -z "$spring_boot_version" ]; then
+        if grep -q "org\.springframework\.boot:.*:[0-9]" "$gradle_file"; then
+          spring_boot_version=$(grep -oP "org\.springframework\.boot:[^:]+:\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          debug_log "Encontrado versão em dependência do starter (formato alternativo): $spring_boot_version"
         fi
       fi
       
       # Se encontrou uma versão, sair do loop
       if [ -n "$spring_boot_version" ]; then
+        debug_log "Versão Spring Boot encontrada: $spring_boot_version"
         break
       fi
     fi
@@ -379,16 +428,34 @@ extract_spring_boot_version() {
   
   # Se ainda não encontrou, procurar em pom.xml
   if [ -z "$spring_boot_version" ] && [ -f "$project_dir/pom.xml" ]; then
+    debug_log "Procurando versão Spring Boot no pom.xml"
+    
     # Procurar pela versão do parent
     if grep -q "<parent>" "$project_dir/pom.xml" && grep -q "spring-boot-starter-parent" "$project_dir/pom.xml"; then
       spring_boot_version=$(grep -A10 -B2 "spring-boot-starter-parent" "$project_dir/pom.xml" | grep -oP "<version>\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" | head -1)
-    # Procurar pela versão da propriedade
-    elif grep -q "<spring-boot.version>" "$project_dir/pom.xml" || grep -q "<spring.boot.version>" "$project_dir/pom.xml"; then
-      spring_boot_version=$(grep -oP "<spring[.-]boot\.version>\K[^<]+" "$project_dir/pom.xml" | head -1)
-    # Procurar pela versão de dependência
-    elif grep -q "<artifactId>spring-boot" "$project_dir/pom.xml"; then
-      spring_boot_version=$(grep -A3 -B1 "<artifactId>spring-boot" "$project_dir/pom.xml" | grep -oP "<version>\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" | head -1)
+      debug_log "Encontrado versão no parent do pom.xml: $spring_boot_version"
     fi
+    
+    # Procurar pela versão da propriedade
+    if [ -z "$spring_boot_version" ] && (grep -q "<spring-boot.version>" "$project_dir/pom.xml" || grep -q "<spring.boot.version>" "$project_dir/pom.xml"); then
+      spring_boot_version=$(grep -oP "<spring[.-]boot\.version>\K[^<]+" "$project_dir/pom.xml" | head -1)
+      debug_log "Encontrado versão na propriedade do pom.xml: $spring_boot_version"
+    fi
+    
+    # Procurar pela versão nas dependências do pom.xml
+    if [ -z "$spring_boot_version" ]; then
+      # Procurar em dependências diretas
+      if grep -q "<artifactId>spring-boot" "$project_dir/pom.xml"; then
+        spring_boot_version=$(grep -A3 -B1 "<artifactId>spring-boot" "$project_dir/pom.xml" | grep -oP "<version>\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" | head -1)
+        debug_log "Encontrado versão nas dependências do pom.xml: $spring_boot_version"
+      fi
+    fi
+  fi
+  
+  if [ -n "$spring_boot_version" ]; then
+    debug_log "Versão Spring Boot final: $spring_boot_version para projeto $(basename "$project_dir")"
+  else
+    debug_log "Nenhuma versão Spring Boot encontrada para: $project_dir"
   fi
   
   echo "$spring_boot_version"
