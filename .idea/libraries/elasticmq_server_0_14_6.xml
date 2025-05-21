@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="elasticmq-server-0.14.6">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/data/repo_cache/notification-service-lambda/local-deploy/elasticmq-server-0.14.6.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>

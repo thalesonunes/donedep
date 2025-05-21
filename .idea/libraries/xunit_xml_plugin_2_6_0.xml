@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="xunit-xml-plugin-2.6.0">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/data/repo_cache/security-token-e2e-tests/.allure/allure-2.6.0/plugins/xunit-xml-plugin/xunit-xml-plugin-2.6.0.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
