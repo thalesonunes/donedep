@@ -399,8 +399,22 @@ extract_spring_boot_version() {
       
       # Se não encontrou na dependência direta, tentar outros padrões
       if [ -z "$spring_boot_version" ]; then
+        # Nova lógica: verificar versão no buildscript e plugin do Spring Boot
+        
+        # Primeiro procurar por gradlePluginVersion no buildscript ext
+        if grep -q "gradlePluginVersion.*=.*[0-9]" "$gradle_file"; then
+          spring_boot_version=$(grep -oP "gradlePluginVersion\s*=\s*['\"]?\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          debug_log "Encontrado versão no gradlePluginVersion do buildscript: $spring_boot_version"
+        fi
+        
+        # Se não encontrou no gradlePluginVersion, procurar diretamente no classpath do buildscript
+        if [ -z "$spring_boot_version" ] && grep -q "classpath.*org\.springframework\.boot:spring-boot-gradle-plugin:" "$gradle_file"; then
+          spring_boot_version=$(grep -oP "org\.springframework\.boot:spring-boot-gradle-plugin:\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          debug_log "Encontrado versão no spring-boot-gradle-plugin do buildscript: $spring_boot_version"
+        fi
+        
         # Verificar pelo plugin do Spring Boot
-        if grep -q "id[[:space:]]*('|\")org.springframework.boot['\"]" "$gradle_file"; then
+        if [ -z "$spring_boot_version" ] && grep -q "id[[:space:]]*('|\")org.springframework.boot['\"]" "$gradle_file"; then
           spring_boot_version=$(grep -oP "id(\s*\(\s*|\s+)['\"]org\.springframework\.boot[^'\"]*['\"][^'\"]*['\"](\s*\))?\s+version\s+['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
           debug_log "Encontrado versão no plugin: $spring_boot_version"
         fi
