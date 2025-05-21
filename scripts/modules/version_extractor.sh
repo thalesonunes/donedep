@@ -104,8 +104,18 @@ extract_java_version() {
       # Procurar padrões tradicionais de definição de versão Java em Gradle
       # Buscar declaração de compatibilidade Java
       
-      # Primeiro verificar o formato 1.x (mais específico) para evitar extração incorreta
-      if grep -q "sourceCompatibility\s*=\s*1\.[0-9]\+" "$gradle_file"; then
+      # Primeiro verificar se está definido no ext.jdkVersion
+      if grep -q "jdkVersion\s*=\s*JavaVersion\." "$gradle_file"; then
+        local version_str=$(grep -o "JavaVersion\.VERSION_[0-9]\+" "$gradle_file" | head -1)
+        local version_num=$(echo "$version_str" | grep -oP "VERSION_\K[0-9]+" | head -1)
+        if [ -n "$version_num" ]; then
+          java_version="$version_num"
+          debug_log "Encontrado versão no ext.jdkVersion: $java_version"
+        fi
+      fi
+      
+      # Se não encontrou no ext.jdkVersion, verificar o formato 1.x (mais específico)
+      if [ -z "$java_version" ] && grep -q "sourceCompatibility\s*=\s*1\.[0-9]\+" "$gradle_file"; then
         java_version=$(grep -oP "sourceCompatibility\s*=\s*1\.\K[0-9]+" "$gradle_file" | sed -E 's/([0-9]+).*/1.\1/g' | head -1)
         debug_log "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version"
         debug_log "Extraído Java versão $java_version de sourceCompatibility 1.x em $gradle_file"
@@ -401,10 +411,10 @@ extract_spring_boot_version() {
       if [ -z "$spring_boot_version" ]; then
         # Nova lógica: verificar versão no buildscript e plugin do Spring Boot
         
-        # Primeiro procurar por gradlePluginVersion no buildscript ext
-        if grep -q "gradlePluginVersion.*=.*[0-9]" "$gradle_file"; then
-          spring_boot_version=$(grep -oP "gradlePluginVersion\s*=\s*['\"]?\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
-          debug_log "Encontrado versão no gradlePluginVersion do buildscript: $spring_boot_version"
+        # Primeiro procurar por springBootPluginVersion ou gradlePluginVersion no buildscript ext
+        if grep -q "springBootPluginVersion.*=.*[0-9]" "$gradle_file" || grep -q "gradlePluginVersion.*=.*[0-9]" "$gradle_file"; then
+          spring_boot_version=$(grep -oP "(springBootPluginVersion|gradlePluginVersion)\s*=\s*['\"]?\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          debug_log "Encontrado versão no plugin version do buildscript: $spring_boot_version"
         fi
         
         # Se não encontrou no gradlePluginVersion, procurar diretamente no classpath do buildscript
