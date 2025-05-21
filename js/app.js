@@ -14,16 +14,45 @@ const copyAllButton = document.getElementById('copy-all-button');
 const clearFiltersButton = document.getElementById('clear-filters-button');
 const dependenciesGrid = document.getElementById('dependencies-grid');
 
+// Função global para comparar versões semânticas
+function compareVersions(a, b) {
+  if (a === b) return 0;
+  
+  // Se um dos valores é "Nenhum", ele vem por último
+  if (a === 'Nenhum') return 1;
+  if (b === 'Nenhum') return -1;
+  
+  // Para versões semânticas (x.y.z), comparar cada parte
+  const aParts = a.toString().split('.').map(Number);
+  const bParts = b.toString().split('.').map(Number);
+  
+  for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+    const aVal = aParts[i] || 0;
+    const bVal = bParts[i] || 0;
+    if (aVal !== bVal) {
+      return aVal - bVal;
+    }
+  }
+  return 0;
+}
+
 // Funções para o modal de filtro bloqueado
 function showFilterLockedModal() {
-  const modal = document.getElementById('filter-locked-modal');
-  if (!modal.classList.contains('show')) {
-    modal.classList.add('show');
-    // Fechar o modal automaticamente após 3 segundos
-    setTimeout(() => {
-      closeFilterLockedModal();
-    }, 3000);
-  }
+  // Mostrar o modal de filtro bloqueado
+  const lockedModal = document.getElementById('locked-filter-modal');
+  
+  // Remover a classe show caso já esteja aplicada
+  lockedModal.classList.remove('show');
+  
+  // Forçar reflow para reiniciar a animação
+  void lockedModal.offsetWidth;
+  
+  lockedModal.classList.add('show');
+  
+  // Esconder o modal após 3 segundos
+  setTimeout(() => {
+    lockedModal.classList.remove('show');
+  }, 3000);
 }
 
 function closeFilterLockedModal() {
@@ -59,7 +88,18 @@ function getUnique(projects, key) {
     if (a === 'Nenhum') return 1;
     if (b === 'Nenhum') return -1;
     
-    // Converter strings de versão para arrays de números
+    // Normalização especial para versões Java (converter "1.8" para "8")
+    const normalizeJavaVersion = (version) => {
+      if (typeof version === 'string' && version.startsWith('1.')) {
+        const majorVersion = version.substring(2);
+        if (!isNaN(parseInt(majorVersion))) {
+          return majorVersion;
+        }
+      }
+      return version;
+    };
+    
+    // Para versões semânticas (x.y.z), comparar cada parte
     const aParts = a.toString().split('.').map(Number);
     const bParts = b.toString().split('.').map(Number);
     
@@ -106,8 +146,7 @@ function fillDropdown(id, values, selectedValue) {
     
     // Bloquear o dropdown quando um valor é selecionado
     select.disabled = true;
-  } else {
-    // Se houver apenas uma opção disponível, selecioná-la automaticamente
+  } else {      // Se houver apenas uma opção disponível, selecioná-la automaticamente
     if (values.length === 1) {
       const optOnly = document.createElement('option');
       optOnly.value = values[0];
@@ -125,8 +164,44 @@ function fillDropdown(id, values, selectedValue) {
       optAll.textContent = 'Todas';
       select.appendChild(optAll);
       
-      // Adicionar opções compatíveis em ordem alfabética
-      values.sort().forEach(val => {
+      // Determinar o tipo de filtro (java, kotlin, etc.) com base no ID
+      const filterType = id.replace('filter-', '');
+      
+      // Adicionar opções ordenadas por versão
+      const sortedValues = [...values].sort((a, b) => {
+        // Especial para Java - normalizar formatos como "1.8" para "8" antes de comparar
+        if (filterType === 'java') {
+          // Função auxiliar para normalizar versões Java
+          const normalizeJavaVersion = (version) => {
+            // Caso 1: Formato "1.8" -> retorna 8 como número
+            if (typeof version === 'string' && version.startsWith('1.')) {
+              const majorVersion = version.substring(2);
+              if (!isNaN(parseInt(majorVersion))) {
+                return parseInt(majorVersion);
+              }
+            } 
+            // Caso 2: Formato "8" -> retorna 8 como número
+            else if (!isNaN(parseInt(version))) {
+              return parseInt(version);
+            }
+            // Fallback: retorna o valor original
+            return version;
+          };
+          
+          const aNormalized = normalizeJavaVersion(a);
+          const bNormalized = normalizeJavaVersion(b);
+          
+          // Se ambos são números após a normalização, compare numericamente
+          if (typeof aNormalized === 'number' && typeof bNormalized === 'number') {
+            return aNormalized - bNormalized;
+          }
+        }
+        
+        // Para outros tipos ou quando a normalização Java não se aplica
+        return compareVersions(a, b);
+      });
+      
+      sortedValues.forEach(val => {
         const opt = document.createElement('option');
         opt.value = val;
         opt.textContent = val;
