@@ -279,7 +279,8 @@ extract_java_version() {
     java_version=$(normalize_java_version "$java_version")
     debug_log "Versão Java final normalizada: $java_version para projeto $(basename "$project_dir")"
   else
-    debug_log "Nenhuma versão Java encontrada para: $project_dir"
+    debug_log "Nenhuma versão Java encontrada para: $project_dir, retornando NENHUM"
+    java_version="NENHUM"
   fi
   
   echo "$java_version"
@@ -326,6 +327,12 @@ extract_kotlin_version() {
     fi
   fi
   
+  # Se não encontrou nenhuma versão, retornar "NENHUM"
+  if [ -z "$kotlin_version" ]; then
+    debug_log "Nenhuma versão Kotlin encontrada para: $project_dir, retornando NENHUM"
+    kotlin_version="NENHUM"
+  fi
+  
   echo "$kotlin_version"
 }
 
@@ -339,7 +346,14 @@ extract_gradle_version() {
     # Extrair versão do URL de distribuição
     if grep -q "distributionUrl" "$project_dir/gradle/wrapper/gradle-wrapper.properties"; then
       gradle_version=$(grep -oP "gradle-\K[0-9]+\.[0-9]+(\.[0-9]+)?(-[a-z0-9]+)?" "$project_dir/gradle/wrapper/gradle-wrapper.properties" | head -1)
+      debug_log "Encontrado versão Gradle no wrapper.properties: $gradle_version"
     fi
+  fi
+  
+  # Se não encontrou nenhuma versão, retornar "NENHUM"
+  if [ -z "$gradle_version" ]; then
+    debug_log "Nenhuma versão Gradle encontrada para: $project_dir, retornando NENHUM"
+    gradle_version="NENHUM"
   fi
   
   echo "$gradle_version"
@@ -455,7 +469,8 @@ extract_spring_boot_version() {
   if [ -n "$spring_boot_version" ]; then
     debug_log "Versão Spring Boot final: $spring_boot_version para projeto $(basename "$project_dir")"
   else
-    debug_log "Nenhuma versão Spring Boot encontrada para: $project_dir"
+    debug_log "Nenhuma versão Spring Boot encontrada para: $project_dir, retornando NENHUM"
+    spring_boot_version="NENHUM"
   fi
   
   echo "$spring_boot_version"
