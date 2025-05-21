@@ -5,7 +5,7 @@
 
 # JoneDep - Gerenciador de Dependências de Microsserviços
 
-JoneDep é uma ferramenta simples e direta para extrair e visualizar dependências de projetos Java/Kotlin com Gradle e Maven. Ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
+JoneDep é uma ferramenta simples e direta para visualizar dependências de projetos Java/Kotlin com Gradle e Maven. Ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
 
 ## Eficiência e Simplicidade
 
@@ -33,10 +33,10 @@ O código foi completamente simplificado para garantir manutenibilidade e confia
 │   └── repo_cache/       # Cache dos repositórios clonados
 ├── js/                   # Arquivos JavaScript
 │   ├── app.js            # Lógica principal da aplicação
-│   └── data-adapter.js   # Adaptador simplificado para compatibilidade de dados
+│   ├── data-adapter.js   # Adaptador simplificado para compatibilidade de dados
+│   └── dependency-helper.js # Helper para auxiliar na exibição de dependências
 ├── scripts/              # Diretório de scripts
 │   ├── main.sh           # Script principal modularizado
-│   ├── check_json.sh     # Script para validar JSON gerado
 │   ├── verify.sh         # Script de verificação rápida
 │   ├── install.sh        # Script de instalação
 │   └── modules/          # Módulos do sistema
@@ -59,6 +59,21 @@ O código foi completamente simplificado para garantir manutenibilidade e confia
 - **Cópia fácil** de dependências para uso em novos projetos
 - **Detecção automática** de versões Java, Kotlin, Gradle e Spring Boot
 - **Arquitetura modular** para fácil manutenção e extensibilidade
+- **Ordenação inteligente de versões** com suporte especial para formatos de versão Java (1.8, 8, 11, 17)
+
+## Atualizações Recentes
+
+### Melhorias no Sistema de Filtragem (20/05/2025)
+
+- **Ordenação correta de versões Java**: Implementada correção para ordenar adequadamente diferentes formatos de versões Java (como 1.8 e 8), garantindo que as versões apareçam em ordem numérica correta nos filtros
+- **Preservação de filtros durante mudanças**: Corrigido o problema onde as opções de filtro desapareciam após modificações
+- **Exibição completa de opções**: Garantia de que todas as opções disponíveis sejam exibidas nos dropdowns
+
+### Simplificação do Código Frontend (20/05/2025)
+
+- **Otimização da função de comparação de versões**: Refatoração do código para melhor lidar com diferentes formatos de versão
+- **Melhorias de desempenho**: Simplificação de funções para reduzir processamento desnecessário
+- **Adição de helper para dependências**: Novo componente dependency-helper.js para auxiliar na exibição de dependências
 
 ## Processo de Simplificação
 
@@ -121,6 +136,7 @@ A interface web utiliza JavaScript para carregar e exibir as dependências:
 
 - **app.js**: Controla a lógica da aplicação e gerenciamento de estado
 - **data-adapter.js**: Adaptador simplificado que garante compatibilidade de formato
+- **dependency-helper.js**: Fornece suporte adicional para manipulação e exibição de dependências
 
 ## Formatos de Dependências Suportados
 
@@ -228,50 +244,27 @@ python3 -m http.server 9786
 ./run.sh verify
 ```
 
-## Uso da Interface
+## Como Contribuir
 
-### Filtros
+Para contribuir com o projeto JoneDep, siga estas etapas:
 
-Use os filtros à esquerda para refinar a visualização de dependências:
+1. Faça um fork do repositório
+2. Crie uma nova branch com sua feature: `git checkout -b minha-feature`
+3. Implemente suas mudanças garantindo:
+   - Código limpo e legível
+   - Comentários adequados
+   - Testes quando apropriado
+4. Envie suas alterações: `git commit -m 'Adicionando minha feature'`
+5. Faça o push para a branch: `git push origin minha-feature`
+6. Abra um Pull Request
 
-- **Por projeto**: Selecione um ou mais projetos específicos
-- **Por tecnologia**: Filtre por versão de Java, Kotlin, Gradle ou Spring Boot
-- **Por dependência**: Selecione dependências específicas para ver onde são utilizadas
+### Áreas para Contribuição
 
-Para limpar todos os filtros, clique no botão "X" ao lado dos filtros.
-
-### Busca
-
-Digite termos de busca na caixa de pesquisa para encontrar dependências específicas. A busca considera tanto o nome quanto o grupo da dependência.
-
-### Cópia
-
-- Para copiar uma dependência individual, clique no botão de cópia ao lado dela
-- Para copiar todas as dependências filtradas atualmente, clique no botão "COPIAR LISTA COMPLETA"
-
-## Solução de Problemas
-
-### Arquivo JSON vazio
-
-Verifique:
-- Se os repositórios estão disponíveis em `repos.txt`
-- Se as credenciais Git estão configuradas corretamente
-- Se há espaço suficiente em disco
-- O arquivo de log em `data/jone-dep.log` para detalhes
-
-### Interface web não carrega dependências
-
-Verifique:
-- Se o arquivo `data/dependencies.json` existe e é válido
-- Se está utilizando um navegador moderno com JavaScript habilitado
-- Se o arquivo `js/data-adapter.js` está presente e não foi modificado
-
-### O script apresenta erros ao clonar repositórios
-
-Verifique:
-- Se você tem acesso aos repositórios listados
-- Se as credenciais Git estão configuradas corretamente
-- Se o Git está instalado e disponível no PATH
+- Suporte para mais sistemas de build
+- Melhorias na visualização e filtragem
+- Otimização da extração de dependências
+- Documentação adicional
+- Correção de bugs e problemas
 
 ## Lições Aprendidas
 
@@ -282,6 +275,6 @@ Verifique:
 
 ---
 
-**Versão:** 2.1  
-**Última atualização:** 21/05/2025  
+**Versão:** 2.2  
+**Última atualização:** 20/05/2025  
 **Autor:** Thales Nunes
