@@ -24,31 +24,34 @@ O código foi completamente simplificado para garantir manutenibilidade e confia
 
 ```
 ├── assets/               # Arquivos de imagem e recursos
-│   └── jone-dep-logo.svg # Logo do JoneDep
+│   ├── jone-dep-logo-bk.svg # Logo backup do JoneDep
+│   └── jone-dep-logo.svg    # Logo principal do JoneDep
 ├── css/                  # Arquivos de estilo
-│   └── style.css         # Estilos da aplicação
+│   ├── filtered-projects.css # Estilos para projetos filtrados
+│   └── style.css            # Estilos principais da aplicação
 ├── data/                 # Dados da aplicação
 │   ├── dependencies.json # Arquivo com dependências extraídas
-│   ├── jone-dep.log      # Arquivo de log
-│   └── repo_cache/       # Cache dos repositórios clonados
-├── js/                   # Arquivos JavaScript
-│   ├── app.js            # Lógica principal da aplicação
-│   ├── data-adapter.js   # Adaptador simplificado para compatibilidade de dados
-│   └── dependency-helper.js # Helper para auxiliar na exibição de dependências
-├── scripts/              # Diretório de scripts
-│   ├── main.sh           # Script principal modularizado
-│   ├── verify.sh         # Script de verificação rápida
-│   ├── install.sh        # Script de instalação
-│   └── modules/          # Módulos do sistema
+│   └── jone-dep.log     # Arquivo de log
+├── js/                  # Arquivos JavaScript
+│   ├── app.js           # Lógica principal da aplicação
+│   ├── data-adapter.js  # Adaptador simplificado para compatibilidade de dados
+│   ├── dependency-helper.js # Helper para auxiliar na exibição de dependências
+│   └── filtered-projects.js # Lógica para filtrar projetos
+├── scripts/             # Diretório de scripts
+│   ├── main.sh         # Script principal modularizado
+│   ├── verify.sh       # Script de verificação rápida
+│   ├── install.sh      # Script de instalação
+│   └── modules/        # Módulos do sistema
 │       ├── common.sh           # Funções comuns e utilitários
 │       ├── repo_manager.sh     # Gerenciamento de repositórios Git
 │       ├── version_extractor.sh # Extração de versões de tecnologias
 │       ├── dependency_parser.sh # Parsing de dependências
 │       ├── json_handler.sh     # Manipulação de JSON
 │       └── project_analyzer.sh # Análise de estrutura de projetos
-├── run.sh                # Script principal para execução
-├── index.html            # Página principal da aplicação
-└── README.md             # Este arquivo de documentação
+├── run.sh              # Script principal para execução
+├── repos.txt           # Lista de repositórios para análise
+├── index.html         # Página principal da aplicação
+└── README.md         # Este arquivo de documentação
 ```
 
 ## Funcionalidades
@@ -200,7 +203,7 @@ O JoneDep gera um arquivo JSON com a seguinte estrutura:
 
 ```bash
 # Clone o repositório
-git clone https://github.com/user/jone-dep.git
+git clone https://github.com/thalesonunes/jone-dep.git
 cd jone-dep
 
 # Torne os scripts executáveis
@@ -209,15 +212,20 @@ chmod +x run.sh scripts/*.sh scripts/modules/*.sh
 
 ### Extração de Dependências
 
-Adicione os repositórios Git que deseja analisar ao arquivo `repos.txt`, um por linha:
+O JoneDep suporta duas formas de analisar repositórios:
 
-```
-https://github.com/user/projeto1.git
-https://github.com/user/projeto2.git
-/caminho/local/para/projeto3
-```
+1. **Via arquivo `repos.txt`**: Adicione os repositórios Git que deseja analisar ao arquivo `repos.txt`, um por linha:
+   ```
+   https://github.com/user/projeto1.git
+   https://github.com/user/projeto2.git
+   /caminho/local/para/projeto3
+   ```
 
-Execute o script de extração:
+2. **Via diretório `data/repo_cache`**: Coloque os repositórios que deseja analisar diretamente no diretório `data/repo_cache/`. O JoneDep analisará automaticamente todos os projetos Java/Kotlin encontrados neste diretório.
+
+> **Nota**: O diretório `data/repo_cache/` é ignorado pelo Git (exceto o próprio diretório vazio) para evitar o versionamento acidental de repositórios privados.
+
+Execute o script de extração para processar tanto os repositórios listados em `repos.txt` quanto os encontrados em `data/repo_cache/`:
 
 ```bash
 ./run.sh extract
@@ -274,7 +282,3 @@ Para contribuir com o projeto JoneDep, siga estas etapas:
 - Ferramentas devem ser simples e fazer bem sua tarefa principal
 
 ---
-
-**Versão:** 2.2  
-**Última atualização:** 20/05/2025  
-**Autor:** Thales Nunes

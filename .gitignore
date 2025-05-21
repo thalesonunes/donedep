@@ -1,6 +1,7 @@
 # Diretórios de backup e cache
 jone-dep-backup/
-data/repo_cache/
+data/repo_cache/*
+!data/repo_cache/.gitkeep
 
 # Arquivos de dados e logs
 data/dependencies.json.formatted
