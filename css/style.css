@@ -249,37 +249,43 @@ select.filter-dropdown:disabled + .filter-group label {
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: rgba(138, 43, 226, 0.4);
-  color: white;
-  border: 1px solid rgba(138, 43, 226, 0.7);
-  border-radius: 50%;
-  padding: 4px;
+  background-color: #181c23;
+  color: #8a2be2;
+  border: 2px solid #8a2be2;
+  border-radius: 12px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  height: 42px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  width: 28px;
-  height: 28px;
-  min-width: 28px;
-  margin: 0;
-  margin-bottom: 10px;
+  outline: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.25);
   margin-left: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
   align-self: flex-end;
-}
-
-.clear-filters-button .icon {
-  width: 18px;
-  height: 18px;
-  color: white;
-  stroke-width: 0;
-  fill: currentColor;
+  gap: 10px;
 }
 
 .clear-filters-button:hover {
-  background-color: rgba(138, 43, 226, 0.6);
-  border-color: rgba(138, 43, 226, 1);
-  transform: scale(1.15);
-  box-shadow: 0 4px 8px rgba(138, 43, 226, 0.3);
+  background-color: #8a2be2;
+  color: white;
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
 }
+
+.clear-filters-button:hover .material-symbols-outlined {
+  color: white;
+}
+
+.clear-filters-button .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  color: #8a2be2;
+}
+
 .dependencies-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
