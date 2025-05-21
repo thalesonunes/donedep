@@ -10,7 +10,8 @@ let activeFilters = {
 let searchTerm = '';
 const filtersContainer = document.getElementById('filters-container');
 const searchInput = document.getElementById('search-input');
-const copyAllButton = document.getElementById('copy-all-button');
+const copyGradleButton = document.getElementById('copy-gradle-button');
+const copyMavenButton = document.getElementById('copy-maven-button');
 const clearFiltersButton = document.getElementById('clear-filters-button');
 const dependenciesGrid = document.getElementById('dependencies-grid');
 
@@ -575,59 +576,55 @@ function clearAllFilters() {
 }
 
 function setupEventListeners() {
-  // Dropdowns
-  ['java','kotlin','gradle','spring'].forEach(type => {
-    const dropdown = document.getElementById('filter-' + type);
-    
-    // Evento de mudança no dropdown
-    dropdown.addEventListener('change', e => {
-      const filterKey = type === 'spring' ? 'spring_boot' : type;
-      const newValue = e.target.value;
-      
-      // Atualizar apenas o filtro que mudou
-      activeFilters[filterKey] = newValue || null;
-      
-      // Atualizar os dropdowns para refletir as opções compatíveis
-      // considerando a mudança apenas neste filtro
-      updateAllDropdowns();
-      
-      // Renderizar dependências com os novos filtros
-      renderDependencies();
-
-      // Atualizar lista de projetos filtrados
-      const filteredProjects = getFilteredProjects();
-      updateFilteredProjects(filteredProjects);
-      
-      console.log(`Filtro ${filterKey} alterado para: ${activeFilters[filterKey]}`);
-    });
-    
-    // Evento de clique no dropdown - para mostrar o modal quando estiver desabilitado
-    dropdown.addEventListener('mousedown', (e) => {
-      if (e.target.disabled) {
-        e.preventDefault();
-        showFilterLockedModal();
-      }
-    });
-  });
-  // Busca
+  // Event listener para o campo de busca
+  let searchTimeout;
   searchInput.addEventListener('input', (e) => {
-    searchTerm = e.target.value.toLowerCase();
-    renderDependencies();
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      searchTerm = e.target.value.trim();
+      renderDependencies();
+    }, 300);
   });
-  // Botão para limpar filtros
-  clearFiltersButton.addEventListener('click', clearAllFilters);
-  // Copiar todas as declarações
-  copyAllButton.addEventListener('click', () => {
+
+  // Event listener para limpar filtros
+  clearFiltersButton.addEventListener('click', () => {
+    clearAllFilters();
+  });
+
+  // Copiar todas as dependências no formato Gradle
+  copyGradleButton.addEventListener('click', () => {
     const filteredDependencies = getFilteredDependencies();
     if (filteredDependencies.length === 0) {
       copyToClipboard('', 'Nenhuma dependência para copiar!');
       return;
     }
-    const declarations = filteredDependencies.map(dep => {
-      // Sempre usar a declaração normal (já resolvida no back-end)
-      return dep.declaration;
-    }).join('\n');
-    copyToClipboard(declarations, 'Todas as dependências copiadas!');
+    const declarations = filteredDependencies.map(dep => 
+      `implementation "${dep.group}:${dep.name}:${dep.version}"`
+    ).join('\n');
+    copyToClipboard(declarations, 'Dependências copiadas no formato Gradle!');
+  });
+
+  // Copiar todas as dependências no formato Maven
+  copyMavenButton.addEventListener('click', () => {
+    const filteredDependencies = getFilteredDependencies();
+    if (filteredDependencies.length === 0) {
+      copyToClipboard('', 'Nenhuma dependência para copiar!');
+      return;
+    }
+    const declarations = filteredDependencies.map(dep => 
+      `<dependency>\n    <groupId>${dep.group}</groupId>\n    <artifactId>${dep.name}</artifactId>\n    <version>${dep.version}</version>\n</dependency>`
+    ).join('\n');
+    copyToClipboard(declarations, 'Dependências copiadas no formato Maven!');
+  });
+
+  // Event listeners para os filtros
+  ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+    const dropdown = document.getElementById('filter-' + type);
+    if (dropdown) {
+      dropdown.addEventListener('change', (e) => {
+        updateActiveFilter(type, e.target.value);
+      });
+    }
   });
 }
 function renderDependencies() {
@@ -659,9 +656,6 @@ function renderDependencies() {
     const card = document.createElement('div');
     card.className = 'dependency-card';
     
-    // Simplificado: usar sempre o campo declaration
-    const copyDeclaration = dep.declaration;
-    
     // Verificar se tem variável não resolvida
     const versionClass = dep.hasUnresolvedVariable ? 'version version-warning' : 'version';
     
@@ -679,32 +673,60 @@ function renderDependencies() {
     let projectsHtml = '';
     const anyFilterActive = Object.values(activeFilters).some(v => v);
     
-    // Se há projetos e contém um array
     if (dep.projects && Array.isArray(dep.projects) && dep.projects.length > 0) {
-      // Se houver apenas um projeto ou se filtros estiverem ativos, mostre o nome do projeto
       if (dep.projects.length === 1 || anyFilterActive) {
         projectsHtml = `<div class="dependency-projects">${dep.projects.join(', ')}</div>`;
-      } 
-      // Se não houver filtros ativos e houver múltiplos projetos, mostre a lista de projetos
-      else if (dep.projects.length > 1) {
+      } else if (dep.projects.length > 1) {
         projectsHtml = `<div class="dependency-projects">${dep.projects.join(',\n')}</div>`;
       }
     }
     
     card.innerHTML = `
-      <div class="dependency-group">${dep.group}</div>
-      <div class="dependency-name">${dep.name}</div>
-      ${projectsHtml}
+      <div class="dependency-group">${escapeHTML(dep.group)}</div>
+      <div class="dependency-name">${escapeHTML(dep.name)}</div>
       <div class="dependency-version">
-        <span class="${versionClass}" id="version-${dep.id || Math.random().toString(36).substring(2)}">${dep.version}</span>
+        <span class="${versionClass}" id="version-${dep.id || Math.random().toString(36).substring(2)}">${escapeHTML(dep.version)}</span>
         ${warningInfo}
-        <span class="material-symbols-outlined copy-button" data-declaration="${escapeHTML(copyDeclaration)}">content_copy</span>
+      </div>
+      ${projectsHtml}
+      <div class="copy-buttons">
+        <button class="copy-button" title="Copiar formato Gradle"
+          data-format="gradle" 
+          data-group="${escapeHTML(dep.group)}" 
+          data-name="${escapeHTML(dep.name)}" 
+          data-version="${escapeHTML(dep.version)}">
+          <span class="material-symbols-outlined">content_copy</span>
+          <span class="button-text">Gradle</span>
+        </button>
+        <button class="copy-button" title="Copiar formato Maven"
+          data-format="maven" 
+          data-group="${escapeHTML(dep.group)}" 
+          data-name="${escapeHTML(dep.name)}" 
+          data-version="${escapeHTML(dep.version)}">
+          <span class="material-symbols-outlined">content_copy</span>
+          <span class="button-text">Maven</span>
+        </button>
       </div>
     `;
     dependenciesGrid.appendChild(card);
-    card.querySelector('.copy-button').addEventListener('click', (e) => {
-      const declaration = e.currentTarget.dataset.declaration;
-      copyToClipboard(declaration, 'Dependência copiada!');
+    
+    // Adicionar event listeners para os botões de cópia
+    card.querySelectorAll('.copy-button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        const format = e.target.closest('.copy-button').dataset.format;
+        const group = e.target.closest('.copy-button').dataset.group;
+        const name = e.target.closest('.copy-button').dataset.name;
+        const version = e.target.closest('.copy-button').dataset.version;
+        
+        let declaration;
+        if (format === 'gradle') {
+          declaration = `implementation "${group}:${name}:${version}"`;
+        } else {
+          declaration = `<dependency>\n    <groupId>${group}</groupId>\n    <artifactId>${name}</artifactId>\n    <version>${version}</version>\n</dependency>`;
+        }
+        
+        copyToClipboard(declaration, `Dependência copiada no formato ${format === 'gradle' ? 'Gradle' : 'Maven'}!`);
+      });
     });
   });
 }

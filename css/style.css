@@ -208,20 +208,19 @@ select.filter-dropdown:disabled + .filter-group label {
 .copy-all-button {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  background-color: transparent;
-  color: white;
-  border: 1px solid #8a2be2;
-  border-radius: 4px;
   padding: 8px 16px;
-  font-size: 0.9rem;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background-color: #21262d;
+  color: #c9d1d9;
+  font-size: 14px;
   cursor: pointer;
-  margin: 0 auto 36px;
-  transition: all 0.2s ease;
+  transition: background-color 0.2s, border-color 0.2s;
 }
 .copy-all-button:hover {
-  background-color: rgba(138, 43, 226, 0.2);
+  background-color: #30363d;
+  border-color: #8b949e;
 }
 
 .clear-filters-button {
@@ -271,11 +270,11 @@ select.filter-dropdown:disabled + .filter-group label {
 .dependency-card {
   background-color: #000000;
   border-radius: 20px;
-  padding: 30px;
+  padding: 25px 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
   min-height: 220px;
 }
 .dependency-group {
@@ -287,7 +286,7 @@ select.filter-dropdown:disabled + .filter-group label {
 .dependency-name {
   font-size: 1.3rem;
   font-weight: 400;
-  margin-bottom: 10px;
+  margin-bottom: 0;
   text-align: center;
   color: #ffffff;
 }
@@ -296,8 +295,8 @@ select.filter-dropdown:disabled + .filter-group label {
   align-items: center;
   justify-content: center;
   gap: 10px;
-  margin-top: auto;
   position: relative;
+  margin: 8px 0;
 }
 .version {
   font-size: 1.5rem;
@@ -342,7 +341,7 @@ select.filter-dropdown:disabled + .filter-group label {
   font-size: 16px;
   text-align: center;
   color: #737373;
-  margin-bottom: 10px;
+  margin: 8px 10px 16px 10px;
   padding: 8px;
   line-height: 1.5;
   width: 100%;
@@ -730,4 +729,57 @@ select.filter-dropdown:disabled + .filter-group label {
     opacity: 1;
     transform: translate(-50%, -50%);
   }
+}
+
+.copy-buttons-container {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 36px;
+}
+
+.copy-buttons {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.copy-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  width: 100%;
+}
+
+.copy-button {
+  position: relative;
+  background: none;
+  border: 2px solid #4a4a4a;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a4a4a;
+  transition: all 0.2s ease;
+  gap: 8px;
+  min-width: 120px;
+}
+
+.copy-button:hover {
+  background-color: #8800ff;
+  color: #ffffff;
+  border-color: #8800ff;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(136, 0, 255, 0.3);
+}
+
+.copy-button .material-symbols-outlined {
+  font-size: 20px;
+}
+
+.copy-button .button-text {
+  font-size: 0.9rem;
+  font-weight: 500;
 }
