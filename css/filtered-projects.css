@@ -63,9 +63,15 @@
   border-radius: 25px;
   font-size: 12px;
   font-weight: 500;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
+  border: none;
+  cursor: pointer;
+  outline: none;
 }
 
 .project-chip:hover {
-  background-color: #414a55;
+  background-color: #8a2be2;
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
 }

@@ -13,11 +13,62 @@ function updateFilteredProjects(filteredData) {
   // Atualizar o contador de projetos
   filteredProjectsCount.textContent = uniqueProjects.length;
   
+  // Calcular e atualizar o total de dependências
+  const totalDependencies = filteredData.reduce((total, project) => {
+    return total + (project.dependencies ? project.dependencies.length : 0);
+  }, 0);
+  filteredDependenciesCount.textContent = totalDependencies;
+  
   // Adicionar chips para cada projeto
   uniqueProjects.forEach(project => {
-    const chip = document.createElement('div');
+    const chip = document.createElement('button');
     chip.className = 'project-chip';
     chip.textContent = project;
+    
+    // Encontrar os dados do projeto
+    const projectData = filteredData.find(item => item.project === project);
+    
+    // Adicionar evento de clique
+    chip.addEventListener('click', () => {
+      // Atualizar os filtros com as versões do projeto
+      if (projectData) {
+        // Primeiro, desbloquear todos os dropdowns
+        ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+          const dropdown = document.getElementById('filter-' + type);
+          if (dropdown) {
+            dropdown.disabled = false;
+          }
+        });
+
+        // Atualizar os selects com as versões do projeto
+        const filters = {
+          java: projectData.javaVersion,
+          kotlin: projectData.kotlinVersion,
+          gradle: projectData.gradleVersion,
+          spring_boot: projectData.springBootVersion
+        };
+
+        // Atualizar cada filtro e suas opções
+        Object.entries(filters).forEach(([key, value]) => {
+          const selectId = key === 'spring_boot' ? 'filter-spring' : `filter-${key}`;
+          const select = document.getElementById(selectId);
+          if (select && value) {
+            // Atualizar o activeFilters
+            activeFilters[key] = value;
+            // Atualizar o valor do select
+            select.value = value;
+          }
+        });
+
+        // Forçar atualização de todos os dropdowns
+        updateAllDropdowns();
+        
+        // Atualizar a lista de projetos com os novos filtros
+        const filteredProjects = getFilteredProjects();
+        updateFilteredProjects(filteredProjects);
+      }
+    });
+    
     filteredProjectsList.appendChild(chip);
   });
 }
