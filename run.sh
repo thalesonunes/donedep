@@ -65,7 +65,7 @@ extract_dependencies() {
   fi
   
   # Executar o script de extração
-  bash ./scripts/main.sh
+  bash ./scripts/main.sh repos.txt
   
   # Verificar resultado
   if [ $? -eq 0 ]; then

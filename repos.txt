@@ -1,6 +1,9 @@
+# JoneDep - Lista de repositórios para análise
 # Adicione uma URL de repositório Git por linha, por exemplo:
+# Formato HTTPS:
 # https://github.com/thalesonunes/webflux-course.git
-# https://github.com/thalesonunes/kotlin-estudos.git
-# https://github.com/thalesonunes/Prog4-CotacaoApp.git
-# https://github.com/thalesonunes/Prog4-ChatApplication.git
-# https://github.com/spring-projects/spring-petclinic.git
+# Formato SSH (sem aspas):
+# git@github.com:thalesonunes/kotlin-estudos.git
+# git@github.com:thalesonunes/Prog4-CotacaoApp.git
+# Caminhos locais também são suportados:
+# /caminho/para/repositorio/local
