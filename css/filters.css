@@ -132,12 +132,20 @@ select.filter-dropdown:disabled + .filter-group label {
   background-color: #3a4556;
 }
 
+.filter-button:active {
+  transform: scale(0.95);
+}
+
 .filter-button.active {
   background-color: #8a2be2;
 }
 
 .filter-button.active:hover {
   background-color: #6a0dad;
+}
+
+.filter-button.active:active {
+  transform: scale(0.95);
 }
 
 .filter-info {
@@ -178,7 +186,13 @@ select.filter-dropdown:disabled + .filter-group label {
 .clear-filters-button:hover {
   background-color: #8a2be2;
   color: white;
-  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(138, 43, 226, 0.3);
+}
+
+.clear-filters-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(138, 43, 226, 0.2);
 }
 
 .clear-filters-button:hover .material-symbols-outlined {

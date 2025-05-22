@@ -75,3 +75,8 @@
   transform: translateY(-1px);
   box-shadow: 0 2px 8px rgba(138, 43, 226, 0.3);
 }
+
+.project-chip:active {
+  transform: scale(0.95);
+  box-shadow: 0 1px 4px rgba(138, 43, 226, 0.2);
+}

@@ -54,7 +54,13 @@
 .copy-all-button:hover {
   background-color: #8800ff;
   color: white;
-  box-shadow: 0 0 10px rgba(136, 0, 255, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(136, 0, 255, 0.3);
+}
+
+.copy-all-button:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(136, 0, 255, 0.2);
 }
 
 .copy-all-button .material-symbols-outlined {

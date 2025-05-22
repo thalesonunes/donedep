@@ -154,11 +154,15 @@
   padding: 8px 20px;
   cursor: pointer;
   font-size: 0.9rem;
-  transition: background-color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .filter-locked-modal .button:hover {
   background-color: #6a0dad;
+}
+
+.filter-locked-modal .button:active {
+  transform: scale(0.95);
 }
 
 @keyframes modalFadeIn {
