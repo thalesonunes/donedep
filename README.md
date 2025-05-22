@@ -165,7 +165,26 @@ chmod +x run.sh scripts/*.sh scripts/modules/*.sh
 ./scripts/install.sh
 ```
 
-### Extração de Dependências
+### Modo de Execução Rápida
+
+A forma mais simples de usar o JoneDep é executando o script principal sem argumentos:
+
+```bash
+./run.sh
+```
+
+Este comando realiza automaticamente:
+1. Verificação do ambiente
+2. Extração de dependências dos repositórios
+3. Inicialização do servidor web para visualização
+
+Ideal para quem deseja um fluxo de trabalho simplificado sem precisar executar comandos separados.
+
+### Comandos Específicos
+
+Para quem precisa de um controle mais granular, é possível executar as etapas individualmente:
+
+#### Extração de Dependências
 
 O JoneDep oferece duas formas de analisar repositórios:
 
@@ -188,7 +207,7 @@ Execute o script de extração:
 ./run.sh extract
 ```
 
-### Visualização de Dependências
+#### Visualização de Dependências
 
 Para iniciar a interface web:
 
@@ -203,7 +222,7 @@ python3 -m http.server 9786
 # Acesse http://localhost:9786 no navegador
 ```
 
-### Verificação do Sistema
+#### Verificação do Sistema
 
 Para verificar se o ambiente possui todas as dependências necessárias:
 
