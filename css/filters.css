@@ -1,0 +1,196 @@
+.filters-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  padding: 18px 24px 20px 24px;
+  background: transparent;
+}
+
+.filters-wrapper {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  max-width: 980px;
+  justify-content: center;
+  position: relative;
+}
+
+.filter-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 140px;
+  flex: 1;
+  max-width: 200px;
+}
+
+.filter-group label {
+  font-size: 1.05rem;
+  color: #b3b3b3;
+  font-weight: 700;
+  margin-left: 0;
+  letter-spacing: 1px;
+  margin-bottom: 2px;
+  text-align: center;
+  width: 100%;
+}
+
+.filter-row {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-end;
+  gap: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+  justify-content: center;
+  position: relative;
+}
+
+.filter-dropdown {
+  background-color: #181c23;
+  color: #fff;
+  border: 2px solid #8a2be2;
+  border-radius: 25px;
+  padding: 8px 16px;
+  padding-right: 36px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  width: 100%;
+  min-width: 140px;
+  height: 42px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.25);
+  text-align: center;
+  appearance: none;
+  -webkit-appearance: none; 
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.filter-dropdown::-ms-expand {
+  display: none;
+}
+
+.filter-dropdown option {
+  text-align: center;
+}
+
+.filter-dropdown:focus {
+  background-color: #2d3748;
+  border-color: #6a0dad;
+}
+
+.filter-dropdown:disabled {
+  background-color: #141414 !important;
+  border-color: #333333 !important;
+  color: #666666 !important;
+  cursor: not-allowed !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+  box-shadow: none !important;
+  background-image: none !important;
+  padding-right: 16px !important;
+}
+
+select.filter-dropdown:disabled + .filter-group label {
+  color: #666666;
+}
+
+@keyframes filter-reset {
+  0% { background-color: #ff000030; border-color: #ff5555; }
+  50% { background-color: #ff000020; border-color: #ff3333; }
+  100% { background-color: #181c23; border-color: #8a2be2; }
+}
+
+.filter-reset-animation {
+  animation: filter-reset 1s ease-out;
+}
+
+.filter-button {
+  background-color: #2d3748;
+  color: white;
+  border: none;
+  border-radius: 25px;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+  background-color: #3a4556;
+}
+
+.filter-button.active {
+  background-color: #8a2be2;
+}
+
+.filter-button.active:hover {
+  background-color: #6a0dad;
+}
+
+.filter-info {
+  display: block;
+  margin-top: 15px;
+  font-size: 0.9rem;
+  color: #aaa;
+}
+
+.filter-tip {
+  display: block;
+  margin-top: 10px;
+  font-size: 0.85rem;
+  color: #8a2be2;
+}
+
+.clear-filters-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #181c23;
+  color: #8a2be2;
+  border: 2px solid #8a2be2;
+  border-radius: 25px;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  height: 42px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.25);
+  margin-left: 8px;
+  align-self: flex-end;
+  gap: 10px;
+}
+
+.clear-filters-button:hover {
+  background-color: #8a2be2;
+  color: white;
+  box-shadow: 0 0 10px rgba(138, 43, 226, 0.3);
+}
+
+.clear-filters-button:hover .material-symbols-outlined {
+  color: white;
+}
+
+.clear-filters-button .material-symbols-outlined {
+  font-size: 18px;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  color: #8a2be2;
+}

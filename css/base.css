@@ -1,0 +1,25 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body, .logo-text, input, button, select, textarea {
+  font-family: 'Roboto Mono', 'RobotoMono', 'Roboto', Arial, sans-serif !important;
+}
+
+body {
+  font-family: 'Roboto', sans-serif;
+  background-color: #0f1318;
+  color: #ffffff;
+  padding: 20px;
+}
+
+.app-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0 auto;
+  max-width: 1400px;
+  width: 100%;
+}

@@ -1,0 +1,173 @@
+/* Estilos base para modais */
+.copy-modal,
+.incompatible-modal,
+.filter-locked-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  z-index: 1000;
+  color: white;
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+  pointer-events: none;
+}
+
+/* Copy Modal específico */
+.copy-modal {
+  background-color: #8a2be2;
+}
+
+.copy-modal.show,
+.incompatible-modal.show {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  animation: modalPulse 0.3s forwards;
+}
+
+@keyframes modalPulse {
+  0% { transform: translate(-50%, -50%) scale(0.9); }
+  50% { transform: translate(-50%, -50%) scale(1.05); }
+  100% { transform: translate(-50%, -50%) scale(1); }
+}
+
+.copy-modal-content,
+.incompatible-modal-content {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.copy-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.copy-icon svg {
+  width: 22px;
+  height: 22px;
+  fill: white;
+  animation: checkmark 0.5s ease-out forwards;
+}
+
+@keyframes checkmark {
+  0% { transform: scale(0); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+#copy-modal-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+/* Incompatible Modal específico */
+.incompatible-modal {
+  background-color: #a01d1d;
+}
+
+.incompatible-modal .warning-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+}
+
+.incompatible-modal .warning-icon .material-symbols-outlined {
+  font-size: 24px;
+  color: white;
+}
+
+.incompatible-message {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+#incompatible-modal-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+#incompatible-modal-text {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+/* Filter Locked Modal específico */
+.filter-locked-modal {
+  background-color: #1a2028;
+  border: 2px solid #8a2be2;
+  border-radius: 25px;
+  padding: 20px;
+  max-width: 90vw;
+  width: 400px;
+  text-align: center;
+  display: none;
+}
+
+.filter-locked-modal.show {
+  display: block;
+  animation: modalFadeIn 0.3s ease-out;
+}
+
+.filter-locked-modal .title {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 12px;
+  color: #8a2be2;
+}
+
+.filter-locked-modal .message {
+  margin-bottom: 20px;
+  line-height: 1.4;
+}
+
+.filter-locked-modal .button {
+  background-color: #8a2be2;
+  border: none;
+  border-radius: 25px;
+  color: white;
+  padding: 8px 20px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
+}
+
+.filter-locked-modal .button:hover {
+  background-color: #6a0dad;
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -60%);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%);
+  }
+}

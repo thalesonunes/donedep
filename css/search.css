@@ -1,0 +1,67 @@
+.actions-container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 36px;
+  margin-top: 10px;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  justify-content: center;
+}
+
+.search-input {
+  width: 400px;
+  padding: 12px 20px;
+  border-radius: 25px;
+  border: 2px solid #8800ff;
+  background-color: #181c23;
+  color: white;
+  font-size: 1rem;
+  outline: none;
+  text-align: center;
+  font-weight: 500;
+}
+
+.search-input::placeholder {
+  color: rgba(255, 255, 255, 0.7);
+  transition: opacity 0.2s ease;
+}
+
+.search-input:focus::placeholder {
+  opacity: 0;
+}
+
+.copy-all-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  border: 2px solid #8800ff;
+  border-radius: 25px;
+  background-color: #181c23;
+  color: #8800ff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  height: 48px;
+}
+
+.copy-all-button:hover {
+  background-color: #8800ff;
+  color: white;
+  box-shadow: 0 0 10px rgba(136, 0, 255, 0.3);
+}
+
+.copy-all-button .material-symbols-outlined {
+  font-size: 20px;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+}
