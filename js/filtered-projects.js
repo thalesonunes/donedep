@@ -2,6 +2,7 @@
 function updateFilteredProjects(filteredData) {
   const filteredProjectsList = document.getElementById('filtered-projects-list');
   const filteredProjectsCount = document.getElementById('filtered-projects-count');
+  const filteredDependenciesCount = document.getElementById('filtered-dependencies-count');
   
   // Limpar a lista atual
   filteredProjectsList.innerHTML = '';
@@ -9,7 +10,7 @@ function updateFilteredProjects(filteredData) {
   // Extrair projetos únicos dos dados filtrados
   const uniqueProjects = [...new Set(filteredData.map(item => item.project))];
   
-  // Atualizar o contador
+  // Atualizar o contador de projetos
   filteredProjectsCount.textContent = uniqueProjects.length;
   
   // Adicionar chips para cada projeto

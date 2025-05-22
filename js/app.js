@@ -629,6 +629,10 @@ function setupEventListeners() {
 }
 function renderDependencies() {
   const filteredDependencies = getFilteredDependencies();
+  
+  // Atualizar imediatamente o contador de dependências
+  document.getElementById('filtered-dependencies-count').textContent = filteredDependencies.length;
+
   if (filteredDependencies.length === 0) {
     // Verificar quais filtros estão ativos
     const activeFilterLabels = [];

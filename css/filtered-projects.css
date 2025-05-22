@@ -17,6 +17,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 24px;
   margin-bottom: 12px;
 }
 
@@ -25,6 +26,18 @@
   font-weight: 500;
   color: #8b949e;
   margin-right: 8px;
+}
+
+.count-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.count-divider {
+  width: 1px;
+  height: 20px;
+  background-color: rgba(138, 43, 226, 0.3);
 }
 
 .filtered-projects-count {
