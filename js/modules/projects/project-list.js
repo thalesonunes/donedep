@@ -1,5 +1,5 @@
 /**
- * JoneDep - Lista de Projetos
+ * DoneDep - Lista de Projetos
  * Gerencia a visualização e interação com a lista de projetos filtrados
  */
 

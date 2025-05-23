@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Manipulação de JSON
+# DoneDep - Manipulação de JSON
 # Autor: Thales Nunes
 # Data: 18/05/2025
 # Versão: 1.0

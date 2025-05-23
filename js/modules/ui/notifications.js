@@ -1,5 +1,5 @@
 /**
- * JoneDep - Sistema de Notificações
+ * DoneDep - Sistema de Notificações
  * Gerencia notificações e feedbacks para o usuário
  */
 

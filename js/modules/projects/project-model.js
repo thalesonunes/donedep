@@ -1,5 +1,5 @@
 /**
- * JoneDep - Modelo de Projetos
+ * DoneDep - Modelo de Projetos
  * Gerencia a lógica e os dados relacionados aos projetos
  */
 

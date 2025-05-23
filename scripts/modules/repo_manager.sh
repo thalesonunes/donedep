@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Gerenciamento de repositórios
+# DoneDep - Gerenciamento de repositórios
 # Autor: Thales Nunes 
 # Data: 18/05/2025
 # Versão: 1.0

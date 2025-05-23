@@ -1,5 +1,5 @@
 /**
- * JoneDep - Sistema de Modais
+ * DoneDep - Sistema de Modais
  * Funções para gerenciar e exibir modais na aplicação
  */
 

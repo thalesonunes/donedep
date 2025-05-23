@@ -1,5 +1,5 @@
 /**
- * JoneDep - Modelo de Filtros
+ * DoneDep - Modelo de Filtros
  * Gerencia o estado e a lógica dos filtros da aplicação
  */
 

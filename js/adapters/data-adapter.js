@@ -1,9 +1,9 @@
 /**
- * JoneDep - Adaptador de Dados
+ * DoneDep - Adaptador de Dados
  * Adapta dados do backend para o formato esperado pelo frontend
  */
 
-console.log('JoneDep Data Adapter carregado');
+console.log('DoneDep Data Adapter carregado');
 
 /**
  * Formata referências a variáveis de forma mais amigável ao usuário

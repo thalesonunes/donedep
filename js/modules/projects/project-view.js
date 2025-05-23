@@ -1,5 +1,5 @@
 /**
- * JoneDep - Visualização de Projetos
+ * DoneDep - Visualização de Projetos
  * Gerencia a visualização e o estado visual dos projetos
  */
 

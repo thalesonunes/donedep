@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="assets/jone-dep-logo.svg" alt="JoneDep Logo" width="400"/>
+  <img src="assets/donedep-logo.svg" alt="DoneDep Logo" width="400"/>
 </p>
 
-# JoneDep - Gerenciador de Dependências de Microsserviços
+# DoneDep - Gerenciador de Dependências de Microsserviços
 
-JoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle e Maven. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
+DoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle e Maven. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
 
 ## Filosofia do Projeto
 
@@ -28,8 +28,8 @@ Durante o desenvolvimento, priorizamos a clareza e a manutenibilidade do código
 
 ```
 ├── assets/               # Recursos visuais e imagens
-│   ├── jone-dep-logo-bk.svg # Logo backup do JoneDep
-│   └── jone-dep-logo.svg    # Logo principal do JoneDep
+│   ├── donedep-logo-bk.svg # Logo backup do DoneDep
+│   └── donedep-logo.svg    # Logo principal do DoneDep
 ├── css/                  # Estilos da interface
 │   ├── base.css             # Estilos base e resets
 │   ├── buttons.css          # Estilos para botões
@@ -43,7 +43,7 @@ Durante o desenvolvimento, priorizamos a clareza e a manutenibilidade do código
 │   └── search.css           # Estilos para componentes de busca
 ├── data/                 # Dados da aplicação
 │   ├── dependencies.json # Arquivo com dependências extraídas
-│   ├── jone-dep.log      # Arquivo de log
+│   ├── donedep.log      # Arquivo de log
 │   └── repo_cache/       # Cache local de repositórios
 ├── js/                   # Lógica da aplicação (JavaScript)
 │   ├── adapters/         # Adaptadores para compatibilidade de dados
@@ -90,7 +90,7 @@ Durante o desenvolvimento, priorizamos a clareza e a manutenibilidade do código
 
 ## Funcionalidades
 
-O JoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenciamento de dependências:
+O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenciamento de dependências:
 
 **Extração de Dados**
 - Detecção automática de versões do Java, Kotlin, Gradle e Spring Boot
@@ -114,7 +114,7 @@ O JoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 
 ## Desenvolvimento com IA
 
-O JoneDep representa um caso de estudo inovador em desenvolvimento colaborativo entre humanos e IA. Todo o projeto foi desenvolvido utilizando uma abordagem de pair programming com assistentes de IA, explorando novas fronteiras em:
+O DoneDep representa um caso de estudo inovador em desenvolvimento colaborativo entre humanos e IA. Todo o projeto foi desenvolvido utilizando uma abordagem de pair programming com assistentes de IA, explorando novas fronteiras em:
 
 - **Colaboração homem-máquina** - Fluxo de trabalho que combina criatividade humana com assistência de IA
 - **Resolução de problemas em tempo real** - Uso de IA para superar desafios de implementação
@@ -155,8 +155,8 @@ Apesar dos desafios, este método de desenvolvimento permitiu uma implementaçã
 
 ```bash
 # Clone o repositório
-git clone https://github.com/thalesonunes/jone-dep.git
-cd jone-dep
+git clone https://github.com/thalesonunes/donedep.git
+cd donedep
 
 # Torne os scripts executáveis
 chmod +x run.sh scripts/*.sh scripts/modules/*.sh
@@ -167,7 +167,7 @@ chmod +x run.sh scripts/*.sh scripts/modules/*.sh
 
 ### Modo de Execução Rápida
 
-A forma mais simples de usar o JoneDep é executando o script principal sem argumentos:
+A forma mais simples de usar o DoneDep é executando o script principal sem argumentos:
 
 ```bash
 ./run.sh
@@ -186,7 +186,7 @@ Para quem precisa de um controle mais granular, é possível executar as etapas 
 
 #### Extração de Dependências
 
-O JoneDep oferece duas formas de analisar repositórios:
+O DoneDep oferece duas formas de analisar repositórios:
 
 1. **Via arquivo `repos.txt`**:
    
@@ -199,7 +199,7 @@ O JoneDep oferece duas formas de analisar repositórios:
 
 2. **Via diretório `data/repo_cache`**:
    
-   Coloque os repositórios diretamente no diretório `data/repo_cache/`. O JoneDep analisará automaticamente todos os projetos Java/Kotlin encontrados neste diretório.
+   Coloque os repositórios diretamente no diretório `data/repo_cache/`. O DoneDep analisará automaticamente todos os projetos Java/Kotlin encontrados neste diretório.
 
 Execute o script de extração:
 
@@ -234,7 +234,7 @@ Para verificar se o ambiente possui todas as dependências necessárias:
 
 ### Sistema de Extração
 
-O JoneDep utiliza uma arquitetura modular baseada em scripts Bash:
+O DoneDep utiliza uma arquitetura modular baseada em scripts Bash:
 
 1. **Gerenciamento de Repositórios** (`repo_manager.sh`)
    - Clone e atualização de repositórios Git
@@ -323,7 +323,7 @@ dependencies {
 
 ## Formato de Saída JSON
 
-O JoneDep gera um arquivo JSON com a seguinte estrutura:
+O DoneDep gera um arquivo JSON com a seguinte estrutura:
 
 ```json
 [
@@ -349,7 +349,7 @@ O JoneDep gera um arquivo JSON com a seguinte estrutura:
 
 ## Como Contribuir
 
-Para contribuir com o JoneDep, siga estas etapas:
+Para contribuir com o DoneDep, siga estas etapas:
 
 1. Faça um fork do repositório
 2. Crie uma branch para sua feature: `git checkout -b minha-feature`
@@ -387,7 +387,7 @@ Para contribuir com o JoneDep, siga estas etapas:
 
 ### Logs e Diagnóstico
 
-O sistema mantém logs detalhados em `data/jone-dep.log` que podem ajudar a identificar problemas durante a extração.
+O sistema mantém logs detalhados em `data/donedep.log` que podem ajudar a identificar problemas durante a extração.
 
 ## Lições Aprendidas
 
@@ -419,4 +419,4 @@ Este projeto incorpora diversos aspectos experimentais que serviram como oportun
 
 ---
 
-**JoneDep** © 2025 | Desenvolvido para simplificar a gestão de dependências em ambientes de microsserviços
+**DoneDep** © 2025 | Desenvolvido para simplificar a gestão de dependências em ambientes de microsserviços

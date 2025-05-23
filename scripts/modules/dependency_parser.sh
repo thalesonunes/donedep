@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Parser de dependências (Versão corrigida para JSON)
+# DoneDep - Parser de dependências (Versão corrigida para JSON)
 # Autor: Thales Nunes
 # Data: 19/05/2025
 # Versão: 1.1
@@ -10,7 +10,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Configurar LOG_FILE - será sobrescrito pelo valor do script principal se existir
 DATA_DIR="$(dirname "${BASH_SOURCE[0]}")/../../../data"
-LOG_FILE="${LOG_FILE:-"$DATA_DIR/jone-dep.log"}"
+LOG_FILE="${LOG_FILE:-"$DATA_DIR/donedep.log"}"
 
 # Extrair variáveis de versão de um arquivo Gradle
 extract_version_variables() {

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Script principal para extração de dependências
+# DoneDep - Script principal para extração de dependências
 # Autor: Thales Nunes
 # Data: 19/05/2025
 # Versão: 2.1
@@ -20,7 +20,7 @@ source "$MODULES_DIR/project_analyzer.sh"
 # Diretório para dados
 DATA_DIR="$SCRIPT_DIR/../data"
 JSON_FILE="$DATA_DIR/dependencies.json"
-LOG_FILE="$DATA_DIR/jone-dep.log"
+LOG_FILE="$DATA_DIR/donedep.log"
 REPO_CACHE_DIR="$DATA_DIR/repo_cache"
 
 # Variáveis globais
@@ -29,12 +29,12 @@ REPO_URLS=()
 # Função para configurar log
 setup_logging() {
   # Limpar o arquivo de log anterior
-  echo "$(date "+%Y-%m-%d %H:%M:%S") - JoneDep v2.1 - Iniciando processamento" > "$LOG_FILE"
+  echo "$(date "+%Y-%m-%d %H:%M:%S") - DoneDep v2.1 - Iniciando processamento" > "$LOG_FILE"
   log_to_file "Configuração de log concluída"
   mkdir -p "$(dirname "$LOG_FILE")"
   
   # Iniciar arquivo de log
-  echo "$(date) - JoneDep v2.1 - Iniciando processamento" > "$LOG_FILE"
+  echo "$(date) - DoneDep v2.1 - Iniciando processamento" > "$LOG_FILE"
   
   # Função de log customizada para escrever no arquivo sem exibir na saída
   file_log() {

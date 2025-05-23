@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Extrator de versões de tecnologias
+# DoneDep - Extrator de versões de tecnologias
 # Autor: Thales Nunes
 # Data: 18/05/2025
 # Versão: 1.1
@@ -10,7 +10,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 # Definir LOG_FILE se não estiver definido
 if [ -z "$LOG_FILE" ]; then
-  LOG_FILE="/tmp/jone_dep_extraction.log"
+  LOG_FILE="/tmp/donedep_extraction.log"
 fi
 
 # Função para normalizar versões do Java

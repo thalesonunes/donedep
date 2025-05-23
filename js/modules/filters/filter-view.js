@@ -1,5 +1,5 @@
 /**
- * JoneDep - Interface dos Filtros
+ * DoneDep - Interface dos Filtros
  * Funções para gerenciar a visualização e interação com os filtros
  */
 

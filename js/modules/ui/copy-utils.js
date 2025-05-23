@@ -1,5 +1,5 @@
 /**
- * JoneDep - Utilitários de Cópia
+ * DoneDep - Utilitários de Cópia
  * Funções para copiar conteúdo para a área de transferência
  */
 

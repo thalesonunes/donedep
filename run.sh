@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Script principal simplificado
+# DoneDep - Script principal simplificado
 # Autor: Thales Nunes
 # Data: 19/05/2025
 # Versão: 2.0
@@ -35,7 +35,7 @@ warning() {
 
 # Função para exibir ajuda
 show_help() {
-  echo "JoneDep - Gerenciador de Dependências de Microsserviços"
+  echo "DoneDep - Gerenciador de Dependências de Microsserviços"
   echo ""
   echo "Uso: $0 [opção]"
   echo ""
@@ -71,7 +71,7 @@ extract_dependencies() {
   if [ $? -eq 0 ]; then
     success "Extração de dependências concluída com sucesso!"
   else
-    error "Falha na extração de dependências. Verifique os logs em data/jone-dep.log"
+    error "Falha na extração de dependências. Verifique os logs em data/donedep.log"
   fi
 }
 
@@ -140,7 +140,7 @@ open_viewer() {
 
 # Função para verificar o sistema
 verify_system() {
-  log "Verificando sistema JoneDep..."
+  log "Verificando sistema DoneDep..."
   
   # Verificar se o script verify.sh existe
   if [ ! -f "./scripts/verify.sh" ]; then

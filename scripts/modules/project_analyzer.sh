@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Analisador de projetos
+# DoneDep - Analisador de projetos
 # Autor: Thales Nunes
 # Data: 19/05/2025
 # Versão: 1.1
@@ -14,7 +14,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/json_handler.sh"
 
 # Configurar LOG_FILE - será sobrescrito pelo valor do script principal se existir
 DATA_DIR="$(dirname "${BASH_SOURCE[0]}")/../../../data"
-LOG_FILE="${LOG_FILE:-"$DATA_DIR/jone-dep.log"}"
+LOG_FILE="${LOG_FILE:-"$DATA_DIR/donedep.log"}"
 
 # Extrair módulos do projeto
 extract_project_modules() {

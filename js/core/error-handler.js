@@ -1,5 +1,5 @@
 /**
- * JoneDep - Tratamento de Erros
+ * DoneDep - Tratamento de Erros
  * Sistema centralizado para manipulação de erros na aplicação
  */
 

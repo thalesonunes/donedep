@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Funções comuns
+# DoneDep - Funções comuns
 # Autor: Thales Nunes
 # Data: 18/05/2025
 # Versão: 1.0
@@ -41,7 +41,7 @@ warning() {
 # Função para registrar mensagens no arquivo de log
 log_to_file() {
   local message="$1"
-  local log_file="${LOG_FILE:-$(dirname "${BASH_SOURCE[0]}")/../../data/jone-dep.log}"
+  local log_file="${LOG_FILE:-$(dirname "${BASH_SOURCE[0]}")/../../data/donedep.log}"
   local timestamp=$(get_timestamp)
   
   # Criar diretório de log se não existir

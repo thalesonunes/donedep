@@ -1,5 +1,5 @@
 /**
- * JoneDep - Utilitários Gerais
+ * DoneDep - Utilitários Gerais
  * Funções utilitárias reutilizáveis em toda a aplicação
  */
 

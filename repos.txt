@@ -1,4 +1,4 @@
-# JoneDep - Lista de repositórios para análise
+# DoneDep - Lista de repositórios para análise
 # Adicione uma URL de repositório Git por linha, por exemplo:
 # Formato HTTPS:
 # https://github.com/thalesonunes/webflux-course.git

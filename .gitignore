@@ -1,5 +1,5 @@
 # Diretórios de backup e cache
-jone-dep-backup/
+donedep-backup/
 data/repo_cache/*
 !data/repo_cache/.gitkeep
 

@@ -1,5 +1,5 @@
 /**
- * JoneDep - Configurações Globais
+ * DoneDep - Configurações Globais
  * Arquivo centralizado de configurações e constantes utilizadas na aplicação
  */
 

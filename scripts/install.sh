@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# JoneDep - Script de instalação
+# DoneDep - Script de instalação
 # Autor: Thales Nunes
 # Data: 18/05/2025
 # Versão: 1.0
@@ -132,7 +132,7 @@ check_repos_file() {
     # Criar arquivo de exemplo se não existir
     log "Criando arquivo repos.txt de exemplo..."
     cat > "$PROJECT_DIR/repos.txt" << EOF
-# Arquivo de repositórios para JoneDep
+# Arquivo de repositórios para DoneDep
 # Adicione as URLs dos repositórios Git que deseja analisar, um por linha
 # Linhas começando com # são tratadas como comentários
 
@@ -196,7 +196,7 @@ install() {
     return 0
   fi
   
-  log "Iniciando instalação do JoneDep..."
+  log "Iniciando instalação do DoneDep..."
   
   # Verificar dependências do sistema
   check_system_dependencies
