@@ -89,6 +89,14 @@ open_viewer() {
   if [ ! -f "./data/dependencies.json" ]; then
     warning "Arquivo de dependências não encontrado: ./data/dependencies.json"
     warning "Execute '$0 extract' primeiro para gerar os dados."
+  else
+    # Verificar se temos arquivos com timestamp
+    timestamp_files=$(ls -1 ./data/dependencies_*.json 2>/dev/null | wc -l)
+    if [ "$timestamp_files" -gt 0 ]; then
+      success "Encontrados $timestamp_files arquivos de dependências com timestamps."
+      latest_file=$(ls -t ./data/dependencies_*.json | head -n 1)
+      success "Arquivo mais recente: $(basename "$latest_file") ($(date -r "$latest_file" '+%d/%m/%Y %H:%M:%S'))"
+    fi
   fi
   
   # Verificar se Python está instalado

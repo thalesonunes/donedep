@@ -4,11 +4,12 @@ data/repo_cache/*
 !data/repo_cache/.gitkeep
 
 # Arquivos de dados e logs
+data/dependencies*.json
 data/dependencies.json.formatted
 data/*.json.raw
 data/*.json.bak
 data/*.log
-data/dependencies.json
+!data/.gitkeep
 # Arquivos temporários
 *.tmp
 *.temp

@@ -19,6 +19,7 @@
   <link rel="stylesheet" href="css/messages.css">
   <link rel="stylesheet" href="css/responsive.css">
   <link rel="stylesheet" href="css/projects.css">
+  <link rel="stylesheet" href="css/history.css">
 </head>
 <body>
   <div class="app-container">
@@ -49,10 +50,15 @@
       <button class="button" id="close-filter-locked-modal">Entendi</button>
     </div>
     <header>
-      <div class="logo">
-        <img src="assets/donedep-logo.svg" alt="DoneDep Logo" class="logo-img" />
+      <div class="header-content">
+        <div class="logo">
+          <img src="assets/donedep-logo.svg" alt="DoneDep Logo" class="logo-img" />
+        </div>
+        <div id="history-selector-container" class="history-selector-container"></div>
       </div>
     </header>
+    
+    <!-- O seletor será inicializado após o carregamento de todos os scripts -->
 
     <div class="filters-container" id="filters-container">
       <div class="filters-wrapper">
@@ -115,24 +121,27 @@
   </div>
   <!-- Scripts na ordem correta de dependências -->
   <script>
-    // Função para carregar scripts em sequência
+    // Função para carregar scripts em sequência retornando uma Promise
     function loadScriptsSequentially(scripts, index = 0) {
-      if (index >= scripts.length) {
-        console.log("Todos os scripts foram carregados com sucesso!");
-        return;
-      }
-      
-      const script = document.createElement('script');
-      script.src = scripts[index];
-      script.onload = function() {
-        console.log(`Carregado: ${scripts[index]}`);
-        loadScriptsSequentially(scripts, index + 1);
-      };
-      script.onerror = function() {
-        console.error(`Erro ao carregar: ${scripts[index]}`);
-        loadScriptsSequentially(scripts, index + 1);
-      };
-      document.body.appendChild(script);
+      return new Promise((resolve) => {
+        if (index >= scripts.length) {
+          console.log("Todos os scripts foram carregados com sucesso!");
+          resolve();
+          return;
+        }
+        
+        const script = document.createElement('script');
+        script.src = scripts[index];
+        script.onload = function() {
+          console.log(`Carregado: ${scripts[index]}`);
+          loadScriptsSequentially(scripts, index + 1).then(resolve);
+        };
+        script.onerror = function() {
+          console.error(`Erro ao carregar: ${scripts[index]}`);
+          loadScriptsSequentially(scripts, index + 1).then(resolve);
+        };
+        document.body.appendChild(script);
+      });
     }
 
     // Lista de scripts na ordem correta
@@ -151,11 +160,25 @@
       'js/modules/projects/project-model.js',
       'js/modules/projects/project-view.js',
       'js/modules/projects/project-list.js',
+      'js/modules/history-selector.js',
       'js/app.js'
     ];
 
     // Iniciar carregamento
-    loadScriptsSequentially(scripts);
+    loadScriptsSequentially(scripts).then(() => {
+      // Inicializar o seletor de histórico após todos os scripts serem carregados
+      console.log("Todos os scripts carregados, iniciando aplicação...");
+      
+      // Garantir que a inicialização seja feita após tudo estar carregado
+      setTimeout(() => {
+        if (window.historySelector && window.historySelector.init) {
+          console.log("Inicializando seletor de histórico...");
+          window.historySelector.init();
+        } else {
+          console.error("Módulo historySelector não foi encontrado!");
+        }
+      }, 100);
+    });
   </script>
 </body>
 </html>

@@ -167,9 +167,85 @@ function validateProject(project) {
   return validProject;
 }
 
+/**
+ * Lista todos os arquivos de dependências disponíveis
+ * @returns {Promise<Array>} - Lista de arquivos disponíveis com timestamps
+ */
+async function listDependencyFiles() {
+  if (!window.Config.DEPENDENCIES_HISTORY_ENABLED) {
+    return [{ path: window.Config.DEPENDENCIES_JSON_PATH, isLatest: true }];
+  }
+
+  try {
+    // Tentar com o arquivo JSON estático
+    // Tentar obter a lista direta dos arquivos na pasta data/
+    try {
+      const response = await fetch('data/');
+      if (response.ok) {
+        const files = await response.json();
+        return files
+          .filter(file => file.name.startsWith('dependencies_') && file.name.endsWith('.json'))
+          .map(file => ({
+            path: `data/${file.name}`,
+            name: file.name,
+            date: file.name.slice(13, 21)
+          }));
+      }
+    } catch (error) {
+      console.warn('Não foi possível listar os arquivos diretamente:', error.message);
+      return [{ path: window.Config.DEPENDENCIES_JSON_PATH }];
+    }
+    
+    // Procurar por arquivos de dependências com padrão de nome
+    try {
+      // Esta é uma implementação limitada que funciona apenas com servidores que suportam listagem de diretório
+      const dirResponse = await fetch('data/');
+      
+      if (dirResponse.ok) {
+        const text = await dirResponse.text();
+        const matches = text.match(/dependencies_[0-9_]+\.json/g) || [];
+        
+        if (matches.length > 0) {
+          return matches.map(filename => ({
+            path: `data/${filename}`,
+            name: filename,
+            date: filename.replace('dependencies_', '').replace('.json', '').replace('_', ' ')
+          })).concat([{ 
+            path: window.Config.DEPENDENCIES_JSON_PATH, 
+            name: 'dependencies.json', 
+            isLatest: true,
+            date: 'Atual (symlink)'
+          }]);
+        }
+      }
+    } catch (dirError) {
+      console.warn('Erro ao listar diretório:', dirError.message);
+    }
+    
+    // Se todas as tentativas falharem, retornar apenas o arquivo padrão
+    console.warn('Não foi possível listar arquivos históricos. Usando arquivo padrão.');
+    return [{ 
+      path: window.Config.DEPENDENCIES_JSON_PATH, 
+      name: 'dependencies.json', 
+      isLatest: true,
+      date: 'Atual' 
+    }];
+  } catch (error) {
+    console.warn('Erro ao listar arquivos históricos:', error);
+    // Em caso de erro, retornar apenas o arquivo padrão
+    return [{ 
+      path: window.Config.DEPENDENCIES_JSON_PATH, 
+      name: 'dependencies.json', 
+      isLatest: true,
+      date: 'Atual' 
+    }];
+  }
+}
+
 // Exportar para compatibilidade com código existente
 window.api = {
   loadDependencies,
+  listDependencyFiles,
   parseJsonWithCommentRemoval,
   validateProject
 };

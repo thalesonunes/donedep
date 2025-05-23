@@ -12,6 +12,7 @@ Este projeto foi desenvolvido com foco em simplicidade e funcionalidade objetiva
 
 1. **Extração de dependências** - através de scripts shell diretos e eficazes
 2. **Visualização interativa** - com interface web responsiva e intuitiva
+3. **Histórico de dependências** - mantém versões com timestamp das dependências extraídas ao longo do tempo
 
 O projeto foi desenvolvido utilizando pair programming com assistência de IA, permitindo explorar novas abordagens de desenvolvimento colaborativo.
 
@@ -111,6 +112,7 @@ O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 - Destaque visual para variáveis não resolvidas
 - Sistema de notificações e modais para feedback de ações
 - Design responsivo com animações consistentes para melhor UX
+- Histórico de dependências com arquivos timestamp para análise de mudanças ao longo do tempo
 
 ## Desenvolvimento com IA
 

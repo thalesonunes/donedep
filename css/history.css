@@ -1,0 +1,100 @@
+/**
+ * DoneDep - Estilos para o seletor de histórico de dependências
+ * 
+ * Este arquivo contém os estilos específicos para o componente de seleção
+ * de arquivos históricos de dependências.
+ */
+
+.history-selector-container {
+  display: flex;
+  align-items: center;
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 8px;
+  gap: 8px;
+}
+
+.history-file-selector {
+  background-color: #181c23;
+  color: #fff;
+  border: 2px solid #494052;
+  border-radius: 25px;
+  padding: 8px 16px;
+  padding-right: 36px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  min-width: 140px;
+  height: 42px;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.25s ease;
+  box-shadow: 0 2px 8px 0 rgba(0, 0, 0, 0.25);
+  text-align: center;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='white' viewBox='0 0 16 16'><path fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+}
+
+.history-file-selector:hover {
+  background-color: #2d3748;
+  border-color: #6a0dad;
+}
+
+.history-file-selector:focus {
+  background-color: #2d3748;
+  border-color: #6a0dad;
+}
+
+/* Loading message */
+.loading-message {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 15px 25px;
+  background-color: rgba(0, 0, 0, 0.8);
+  color: white;
+  border-radius: 4px;
+  z-index: 10000;
+  font-size: 1rem;
+}
+
+/* Sombra e background para destacar o seletor */
+.history-selector-container {
+  background-color: transparent;
+  padding: 5px 10px;
+}
+
+/* Versão responsiva */
+@media (max-width: 768px) {
+  .header-content {
+    padding: 0 20px;
+  }
+
+  .history-selector-container {
+    position: relative;
+    top: 0;
+    right: 0;
+    width: 100%;
+    margin-top: 20px;
+    justify-content: flex-end;
+  }
+  
+  .history-file-selector {
+    min-width: 160px;
+  }
+}
+
+@media (max-width: 480px) {
+  .history-selector-container {
+    justify-content: center;
+  }
+  
+  .history-file-selector {
+    min-width: 200px;
+  }
+}

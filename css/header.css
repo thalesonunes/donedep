@@ -1,9 +1,18 @@
 header {
   display: flex;
-  align-items: flex-end;
   justify-content: center;
   margin-bottom: 32px;
   min-height: 160px;
+}
+
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 980px;
+  position: relative;
+  padding-top: 30px;
 }
 
 .logo {

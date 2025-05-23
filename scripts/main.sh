@@ -19,9 +19,25 @@ source "$MODULES_DIR/project_analyzer.sh"
 
 # Diretório para dados
 DATA_DIR="$SCRIPT_DIR/../data"
-JSON_FILE="$DATA_DIR/dependencies.json"
+# Criar nome de arquivo com timestamp
+TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
+JSON_FILE="$DATA_DIR/dependencies_${TIMESTAMP}.json"
+JSON_SYMLINK="$DATA_DIR/dependencies.json"
 LOG_FILE="$DATA_DIR/donedep.log"
 REPO_CACHE_DIR="$DATA_DIR/repo_cache"
+
+# Função para atualizar o symlink para o arquivo mais recente
+update_symlink() {
+  local latest_file
+  latest_file=$(ls -t "$DATA_DIR"/dependencies_*.json 2>/dev/null | head -n1)
+
+  if [ -n "$latest_file" ]; then
+    log "Atualizando symlink para o arquivo mais recente: $(basename "$latest_file")" | tee -a "$LOG_FILE"
+    ln -sf "$latest_file" "$JSON_SYMLINK"
+  else
+    warning "Nenhum arquivo de dependências encontrado para atualizar o symlink" | tee -a "$LOG_FILE"
+  fi
+}
 
 # Variáveis globais
 REPO_URLS=()
@@ -186,6 +202,18 @@ main() {
   # Salvar e formatar resultado
   echo "$cleaned_json" > "$JSON_FILE"
   
+  # Criar/atualizar symlink para o arquivo mais recente
+  if [ -L "$JSON_SYMLINK" ]; then
+    # Se o symlink já existe, atualizá-lo
+    ln -sf "$(basename "$JSON_FILE")" "$JSON_SYMLINK"
+  else
+    # Se o symlink não existe, criá-lo
+    ln -sf "$(basename "$JSON_FILE")" "$JSON_SYMLINK"
+  fi
+  
+  log "Criado arquivo de dependências com timestamp: $(basename "$JSON_FILE")" | tee -a "$LOG_FILE"
+  log "Symlink atualizado para apontar para o arquivo mais recente: $JSON_SYMLINK" | tee -a "$LOG_FILE"
+  
   # Validar o JSON final
   if ! validate_json "$JSON_FILE" >> "$LOG_FILE" 2>&1; then
     warning "JSON inválido detectado. Usando a versão bruta..." | tee -a "$LOG_FILE"
@@ -195,9 +223,14 @@ main() {
       cp "${JSON_FILE}.raw" "$JSON_FILE"
       if validate_json "$JSON_FILE" >> "$LOG_FILE" 2>&1; then
         success "JSON restaurado a partir do arquivo raw." | tee -a "$LOG_FILE"
+        
+        # Atualizar o symlink para apontar para o arquivo corrigido
+        ln -sf "$(basename "$JSON_FILE")" "$JSON_SYMLINK"
       else
         error "Não foi possível recuperar um JSON válido. Criando um array vazio." | tee -a "$LOG_FILE"
         echo "[]" > "$JSON_FILE"  # Garantir que temos um JSON válido
+        # Ainda assim, atualizar o symlink
+        ln -sf "$(basename "$JSON_FILE")" "$JSON_SYMLINK"
         return 1
       fi
     else
@@ -225,8 +258,21 @@ main() {
     log "Arquivo ${JSON_FILE}.formatted removido." >> "$LOG_FILE"
   fi
   
+  # Opcional: Remover arquivos antigos (mantendo apenas os 10 mais recentes)
+  log "Verificando arquivos antigos para possível limpeza..." >> "$LOG_FILE"
+  file_count=$(ls -1 "$DATA_DIR"/dependencies_*.json 2>/dev/null | wc -l)
+  if [ "$file_count" -gt 10 ]; then
+    log "Mantendo apenas os 10 arquivos JSON mais recentes..." | tee -a "$LOG_FILE"
+    ls -t "$DATA_DIR"/dependencies_*.json | tail -n +11 | xargs rm -f
+    removed_count=$((file_count - 10))
+    log "$removed_count arquivos de dependências antigos foram removidos." | tee -a "$LOG_FILE"
+  fi
+  
   success "Análise concluída. Resultado salvo em: $JSON_FILE" | tee -a "$LOG_FILE"
   log "Log detalhado disponível em: $LOG_FILE"
+  
+  # A atualização do symlink e a limpeza dos arquivos antigos já foi feita acima
+  
   return 0
 }
 
