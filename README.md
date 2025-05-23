@@ -13,9 +13,9 @@ Este projeto foi desenvolvido com foco em simplicidade e funcionalidade objetiva
 1. **Extração de dependências** - através de scripts shell diretos e eficazes
 2. **Visualização interativa** - com interface web responsiva e intuitiva
 
-O projeto também serviu como um experimento de **desenvolvimento em pair programming com múltiplos agentes de IA**, demonstrando tanto os benefícios quanto os desafios dessa abordagem. O histórico de commits evidencia tanto avanços rápidos quanto a necessidade de frequentes correções devido às limitações dos diferentes modelos utilizados.
+O projeto foi desenvolvido utilizando pair programming com assistência de IA, permitindo explorar novas abordagens de desenvolvimento colaborativo.
 
-A escolha de scripts shell para o backend foi uma decisão experimental, visando o aprendizado e exploração das capacidades desta tecnologia em cenários de automação de análise de código. Esta decisão também permitiu avaliar como diferentes agentes de IA lidam com tecnologias menos comuns em seus dados de treinamento.
+A escolha de scripts shell para o backend foi uma decisão experimental, visando explorar as capacidades desta tecnologia em análise de código e automação.
 
 Durante o desenvolvimento, priorizamos a clareza e a manutenibilidade do código, evitando:
 - Duplicação de arquivos e funcionalidades
@@ -114,40 +114,15 @@ O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 
 ## Desenvolvimento com IA
 
-O DoneDep representa um caso de estudo inovador em desenvolvimento colaborativo entre humanos e IA. Todo o projeto foi desenvolvido utilizando uma abordagem de pair programming com assistentes de IA, explorando novas fronteiras em:
+O DoneDep foi desenvolvido utilizando pair programming com assistência de IA, explorando:
 
-- **Colaboração homem-máquina** - Fluxo de trabalho que combina criatividade humana com assistência de IA
-- **Resolução de problemas em tempo real** - Uso de IA para superar desafios de implementação
-- **Refatoração inteligente** - Otimização de código com sugestões assistidas por IA
-- **Documentação aprimorada** - Geração e refinamento colaborativo da documentação
+- Integração de criatividade humana com sugestões de código por IA
+- Resolução de problemas técnicos com assistência inteligente
+- Refinamento e documentação colaborativos
 
-### Desafios e Lições do Desenvolvimento com IA
+O processo revelou tanto benefícios quanto desafios desta abordagem. A combinação da direção humana com sugestões de IA permitiu um desenvolvimento eficiente, apesar das limitações dos modelos atuais. A supervisão humana mostrou-se essencial para manter a qualidade do código e a coerência da implementação.
 
-Durante o processo de desenvolvimento, foram utilizados diversos agentes e modelos de IA, o que trouxe tanto benefícios quanto desafios significativos:
 
-- **Limitações dos diferentes modelos** - Os agentes de IA apresentaram capacidades variadas e limitações específicas
-- **Inconsistências de implementação** - O histórico de commits revela numerosas correções necessárias devido a equívocos dos modelos
-- **Aprendizado iterativo** - O processo exigiu refinamento contínuo das instruções fornecidas aos agentes de IA
-- **Valor da supervisão humana** - A revisão e direcionamento por humanos foram essenciais para manter a qualidade do código
-
-Apesar dos desafios, este método de desenvolvimento permitiu uma implementação relativamente rápida e eficiente. A experiência demonstra tanto o potencial quanto as limitações atuais da programação assistida por IA, oferecendo valiosas lições sobre como integrar estas ferramentas no fluxo de desenvolvimento de software.
-
-## Histórico de Atualizações
-
-**Interface em Português (22/05/2025)**
-- Tradução completa de textos e mensagens do sistema
-- Padronização das animações de botões em toda a interface
-- Melhorias no layout e na responsividade
-
-**Sistema de Filtragem (20/05/2025)**
-- Correção na ordenação de diferentes formatos de versões Java
-- Preservação do estado dos filtros durante navegação
-- Melhoria na exibição das opções de filtragem
-
-**Simplificação do Frontend (20/05/2025)**
-- Refatoração do sistema de comparação de versões
-- Otimização de funções para melhor desempenho
-- Reorganização do código em uma estrutura modular
 
 ## Como Usar
 
@@ -403,19 +378,16 @@ O sistema mantém logs detalhados em `data/donedep.log` que podem ajudar a ident
 
 ## Aspectos Experimentais
 
-Este projeto incorpora diversos aspectos experimentais que serviram como oportunidades de aprendizado:
+Este projeto incorpora aspectos experimentais importantes:
 
 **Uso de Shell Script como Backend**
 - Exploração das capacidades do shell para parsing e análise de código
-- Avaliação da eficiência de scripts shell para extração de metadados de projetos
 - Implementação de um sistema modular baseado em shell scripts
 
 **Desenvolvimento Assistido por IA**
-- Análise do impacto da IA no fluxo de trabalho de desenvolvimento
+- Integração de IA no fluxo de trabalho de desenvolvimento
 - Experimentação com diferentes abordagens de prompting
-- Avaliação da qualidade e eficiência do código gerado com assistência de IA
-- Identificação de padrões de erro comuns em diferentes modelos de IA
-- Documentação das limitações e pontos fortes de diferentes agentes de IA
+- Avaliação da qualidade do código gerado com assistência de IA
 
 ---
 
