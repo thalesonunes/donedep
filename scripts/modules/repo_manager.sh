@@ -34,7 +34,7 @@ clone_repo() {
   
   # Clonar o repositório
   log "Clonando repositório: $repo_url"
-  git clone --quiet "$repo_url" "$target_dir"
+  git clone "$repo_url" "$target_dir"
   if [ $? -ne 0 ]; then
     error "Falha ao clonar repositório: $repo_url"
     return 1
@@ -47,9 +47,15 @@ clone_repo() {
 # Processa uma URL de repositório e retorna um nome de diretório limpo
 get_repo_dirname() {
   local repo_url="$1"
+  local repo_name=""
   
-  # Extrair nome do repositório da URL
-  local repo_name=$(basename "$repo_url" .git)
+  if [[ "$repo_url" == git@* ]]; then
+    # É uma URL SSH (git@github.com:org/repo.git)
+    repo_name=$(echo "$repo_url" | sed 's/.*:\(.*\)\.git/\1/' | sed 's/.*\///')
+  else
+    # É uma URL HTTPS ou caminho local
+    repo_name=$(basename "$repo_url" .git)
+  fi
   
   # Limpar caracteres problemáticos
   repo_name=$(echo "$repo_name" | tr -cd '[:alnum:]-_')
@@ -60,6 +66,16 @@ get_repo_dirname() {
 # Verifica se o diretório contém um projeto Gradle ou Maven válido
 is_valid_project() {
   local project_dir="$1"
+  
+  # Se for uma URL, primeiro clone o repositório
+  if [[ "$project_dir" == git@* ]] || [[ "$project_dir" == http* ]]; then
+    local repo_url="$project_dir"
+    project_dir="$REPO_CACHE_DIR/$(get_repo_dirname "$repo_url")"
+    
+    if ! clone_repo "$repo_url" "$project_dir"; then
+      return 1
+    fi
+  fi
   
   # Verificar se é um projeto Gradle
   if [ -f "$project_dir/build.gradle" ] || \

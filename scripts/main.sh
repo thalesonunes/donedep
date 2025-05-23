@@ -53,26 +53,17 @@ main() {
   check_dependencies >> "$LOG_FILE" 2>&1
 
   # Tratar arquivo de entrada com URLs
-  if [ $# -eq 1 ] && [[ "$1" == *.txt ]]; then
-    if [ ! -f "$1" ]; then
-      error "Arquivo de URLs não encontrado: $1" | tee -a "$LOG_FILE"
-      exit 1
-    fi
-    
+  if [ $# -eq 1 ] && [[ -f "$1" ]]; then
     log "Lendo URLs de repositórios do arquivo: $1" | tee -a "$LOG_FILE"
     # Ler URLs do arquivo
-    mapfile -t repo_urls < "$1"
-    
-    # Filtrar linhas vazias e comentários
-    REPO_URLS=()
-    for url in "${repo_urls[@]}"; do
+    while IFS= read -r url || [ -n "$url" ]; do
       # Ignorar linhas vazias ou que começam com #
       if [[ -n "$url" && ! "$url" =~ ^[[:space:]]*# ]]; then
         # Remover espaços em branco no início e fim
         url=$(echo "$url" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
         REPO_URLS+=("$url")
       fi
-    done
+    done < "$1"
     
     # Verificar se há URLs válidas
     if [ ${#REPO_URLS[@]} -eq 0 ]; then
@@ -136,27 +127,19 @@ main() {
   for repo_url in "${REPO_URLS[@]}"; do
     log "Processando repositório: $repo_url" | tee -a "$LOG_FILE"
     
-    local repo_dir=""
+    # Definir diretório do repositório
+    repo_dir="$REPO_CACHE_DIR/$(get_repo_dirname "$repo_url")"
     
-    # Verificar se é um caminho local ou URL
-    if [[ "$repo_url" == http* ]]; then
-      # É uma URL, precisa clonar
-      repo_dir="$REPO_CACHE_DIR/$(get_repo_dirname "$repo_url")"
-      if ! clone_repo "$repo_url" "$repo_dir" >> "$LOG_FILE" 2>&1; then
-        warning "Falha ao clonar repositório: $repo_url. Continuando com o próximo." | tee -a "$LOG_FILE"
-        continue
-      fi
-    else
-      # É um caminho local
-      repo_dir=$(get_absolute_path "$repo_url")
+    # Clonar o repositório
+    if ! clone_repo "$repo_url" "$repo_dir" >> "$LOG_FILE" 2>&1; then
+      warning "Falha ao clonar repositório: $repo_url. Continuando com o próximo." | tee -a "$LOG_FILE"
+      continue
     fi
     
     # Verificar se é um projeto válido
     if ! is_valid_project "$repo_dir" >> "$LOG_FILE" 2>&1; then
       warning "Repositório não parece ser um projeto Java/Kotlin válido: $repo_url" | tee -a "$LOG_FILE"
-      if [[ "$repo_url" == http* ]]; then
-        cleanup "$repo_dir" >> "$LOG_FILE" 2>&1
-      fi
+      cleanup "$repo_dir" >> "$LOG_FILE" 2>&1
       continue
     fi
     
