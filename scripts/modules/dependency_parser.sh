@@ -845,11 +845,25 @@ parse_kotlin_dsl_dependencies() {
   debug_log "Variáveis extraídas do Kotlin DSL: $kotlin_dsl_vars"
   debug_log "Propriedades extraídas do gradle.properties: $gradle_properties"      # Em arquivos Kotlin DSL, dependências podem usar property()
   debug_log "Processando dependências no arquivo: $build_file"
-  grep -E "(implementation|api|compile|runtime|testImplementation|testCompile)" "$build_file" | while read -r line; do
+  grep -E "(implementation|api|compile|runtime|testImplementation|testCompile|compileOnly|runtimeOnly|annotationProcessor)" "$build_file" | while read -r line; do
     # Remover comentários
     line=$(echo "$line" | sed 's/\/\/.*$//g')
-    debug_log "Processando linha: $line"      # Formato padrão Kotlin DSL: implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
-    if [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+):([^\)\"]*)[\"\']? ]]; then
+    debug_log "Processando linha: $line"
+    
+    # Primeiro verificar formato Spring Boot Kotlin DSL sem versão: implementation("org.springframework.boot:spring-boot-starter")
+    if [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile|annotationProcessor)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+)[\"\'][[:space:]]*[\)] ]]; then
+      local config="${BASH_REMATCH[1]}"
+      local group="${BASH_REMATCH[2]}"
+      local name="${BASH_REMATCH[3]}"
+      local version="managed"  # Versão gerenciada pelo Spring Boot BOM ou dependency management
+      
+      debug_log "Analisando dependência Kotlin DSL sem versão explícita: $config($group:$name) da linha: $line"
+      
+      # Para dependências gerenciadas, usar "managed" como versão
+      echo "{\"group\":\"$group\",\"name\":\"$name\",\"version\":\"$version\",\"configuration\":\"$config\"}"
+      
+    # Formato padrão Kotlin DSL com versão: implementation("org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion")
+    elif [[ "$line" =~ (implementation|api|compileOnly|runtimeOnly|testImplementation|testCompile)[[:space:]]*[\(][\"\']([^:\"\']+):([^:\"\']+):([^\)\"]*)[\"\']? ]]; then
       local config="${BASH_REMATCH[1]}"
       local group="${BASH_REMATCH[2]}"
       local name="${BASH_REMATCH[3]}"
