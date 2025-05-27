@@ -17,27 +17,71 @@ if (typeof window._allProjects === 'undefined') {
  */
 function initializeProjectModel(projects) {
   try {
+    // Limpar dados anteriores completamente
+    window._allProjects = [];
+    
     if (!Array.isArray(projects)) {
       throw new Error('Dados de projetos em formato inválido');
     }
     
-    window._allProjects = projects.map(project => {
+    // Registrar momento da inicialização para diagnóstico
+    console.log(`Iniciando inicialização do modelo em ${Date.now()}`);
+    
+    // Contar projetos originais para diagnóstico
+    const originalCount = projects.length;
+    console.log(`Processando ${originalCount} projetos originais`);
+    
+    // Filtrar projetos vazios antes mesmo de validar
+    const nonEmptyProjects = projects.filter(project => 
+      project && typeof project === 'object' && Object.keys(project).length > 0
+    );
+    
+    if (originalCount !== nonEmptyProjects.length) {
+      console.warn(`Removidos ${originalCount - nonEmptyProjects.length} projetos vazios`);
+    }
+    
+    // Criar uma nova array de projetos para evitar problemas de referência
+    const validatedProjects = [];
+    
+    // Validar cada projeto individualmente
+    for (const project of nonEmptyProjects) {
       try {
-        // Assuming validateProject is exposed via window.api
-        return window.api.validateProject(project);
+        if (!project) continue;
+        
+        // Validar o projeto usando API
+        const validProject = window.api.validateProject(project);
+        
+        // Verificar explicitamente as dependências
+        if (!validProject.dependencies) validProject.dependencies = [];
+        if (!Array.isArray(validProject.dependencies)) validProject.dependencies = [];
+        
+        // Garantir que cada dependência seja um objeto válido
+        validProject.dependencies = validProject.dependencies.filter(dep => 
+          dep && typeof dep === 'object' && Object.keys(dep).length > 0
+        );
+        
+        validatedProjects.push(validProject);
       } catch (err) {
         window.logError({ 
           message: `Projeto inválido ignorado: ${err.message}`,
           type: window.ErrorType.VALIDATION, 
           level: window.ErrorLevel.WARNING, 
           originalError: err,
-          context: { project }
+          context: { project: project ? project.project : 'unknown' }
         });
-        return null;
       }
-    }).filter(Boolean); 
+    }
     
-    console.log(`Modelo de projetos inicializado com ${window._allProjects.length} projetos válidos`);
+    // Atribuir ao global
+    window._allProjects = validatedProjects;
+    
+    // Contar dependências totais para diagnóstico
+    const totalDependencies = window._allProjects.reduce(
+      (total, project) => total + (project.dependencies ? project.dependencies.length : 0),
+      0
+    );
+    
+    console.log(`Modelo de projetos inicializado com ${window._allProjects.length} projetos válidos contendo ${totalDependencies} dependências`);
   } catch (error) {
     window.logError({ 
       message: `Falha ao inicializar modelo de projetos: ${error.message}`,
@@ -166,41 +210,83 @@ class ProjectModel {
     const anyFilterActive = activeFilters && Object.values(activeFilters).some(v => v);
     
     try {
-      const projects = projectsToProcess || []; 
+      // Validar e filtrar projetos não-nulos de antemão
+      const projects = Array.isArray(projectsToProcess) 
+        ? projectsToProcess.filter(p => p && typeof p === 'object')
+        : [];
+      
+      console.log(`getFilteredDependencies: processando ${projects.length} projetos`);
+      console.log(`Filtros ativos:`, JSON.stringify(activeFilters));
       
       projects.forEach(project => {
         if (!project) return;
         
+        // Garantir que requirements existe
         if (!project.requirements) {
           console.warn(`Project ${project.project || 'unnamed'} has no requirements. Creating empty object.`);
-          project.requirements = { java: null, kotlin: null, gradle: null, spring_boot: null };
+          project.requirements = { 
+            java: project.javaVersion || null, 
+            kotlin: project.kotlinVersion || null, 
+            gradle: project.gradleVersion || null, 
+            spring_boot: project.springBootVersion || null 
+          };
         }
         
+        // Determinar se o projeto passa pelos filtros
         let passesFilters = true;
+        
         if (anyFilterActive) {
             for (const [filterType, filterValue] of Object.entries(activeFilters)) {
-              if (filterValue) {
-                const projectRequirement = project.requirements[filterType];
-                if (filterType === 'kotlin' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
-                  if (projectRequirement !== null && typeof projectRequirement !== 'undefined') {
-                    passesFilters = false;
-                    break;
-                  }
-                } else if (projectRequirement !== filterValue) {
+              if (!filterValue) continue; // Pular filtros sem valor
+              
+              const projectRequirement = project.requirements[filterType];
+              
+              // Log para depuração do filtro
+              console.log(`Verificando filtro ${filterType}=${filterValue} para projeto ${project.project}: valor=${projectRequirement}`);
+              
+              // Caso especial para kotlin "NENHUM"
+              if (filterType === 'kotlin' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== null && typeof projectRequirement !== 'undefined') {
+                  console.log(`Projeto ${project.project} não passa no filtro NONE para kotlin`);
                   passesFilters = false;
                   break;
                 }
+              } 
+              // Verificação normal de igualdade
+              else if (projectRequirement !== filterValue) {
+                console.log(`Projeto ${project.project} não passa no filtro ${filterType}=${filterValue}`);
+                passesFilters = false;
+                break;
               }
             }
         }
         
+        // Se o projeto passar nos filtros, adicionar suas dependências
         if (passesFilters) {
+          console.log(`Projeto ${project.project} passa em todos os filtros`);
+          
+          // Validação adicional de dependências
           if (Array.isArray(project.dependencies)) {
-            const projectDeps = project.dependencies.map(dep => ({
-              ...dep,
-              projects: dep.projects ? [...dep.projects] : [], 
-              projectName: project.project 
-            }));
+            const validDeps = project.dependencies.filter(d => d && typeof d === 'object');
+            console.log(`Projeto ${project.project} tem ${validDeps.length} dependências válidas`);
+            
+            // Criar cópias de cada dependência para evitar mutações indesejadas
+            const projectDeps = validDeps.map(dep => {
+              // Criar nova instância da dependência
+              const newDep = { ...dep };
+              
+              // Garantir que projects é um novo array e que inclui o projeto atual
+              newDep.projects = Array.isArray(dep.projects) ? [...dep.projects] : [];
+              if (!newDep.projects.includes(project.project)) {
+                newDep.projects.push(project.project);
+              }
+              
+              // Incluir o nome do projeto para referência
+              newDep.projectName = project.project;
+              
+              return newDep;
+            });
+            
             allDeps = allDeps.concat(projectDeps);
           }
         }

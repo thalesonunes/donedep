@@ -61,16 +61,15 @@ async function fetchWithRetry(url, attempts = window.Config.API.RETRY_ATTEMPTS) 
  */
 async function loadDependencies(jsonPath) {
   try {
-    console.log('Iniciando carregamento de dependências de:', jsonPath);
+    console.log('Iniciando carregamento de dependências de:', jsonPath, 'em', Date.now());
     
-    // Verificar cache primeiro
-    const cached = cache.get(jsonPath);
-    if (cached && (Date.now() - cached.timestamp < window.Config.API.CACHE_TIMEOUT)) {
-      console.log('Usando dados em cache');
-      return cached.data;
-    }
+    // Limpar cache ao mudar de arquivo para evitar inconsistências
+    cache.clear();
+    console.log('Cache limpo para evitar dados inconsistentes');
     
-    const response = await fetchWithRetry(jsonPath + '?v=' + Date.now());
+    // Adicionar um parâmetro de timestamp para garantir que não seja usado o cache do navegador
+    const urlWithCache = `${jsonPath}?v=${Date.now()}&nocache=${Math.random()}`;
+    const response = await fetchWithRetry(urlWithCache);
     
     if (!response.ok) {
       throw new Error(`Erro HTTP: ${response.status} ${response.statusText}`);
@@ -93,8 +92,9 @@ async function loadDependencies(jsonPath) {
     // Validar e processar dados
     let processedData;
     if (Array.isArray(data)) {
-      processedData = data;
-      console.log(`Carregados ${data.length} projetos com sucesso`);
+      // Filtrar itens vazios ou inválidos
+      processedData = data.filter(item => item && typeof item === 'object');
+      console.log(`Carregados ${processedData.length} projetos com sucesso (de ${data.length} totais)`);
     } else if (data && typeof data === 'object' && data.dependencies) {
       processedData = [data];
       console.log('Carregado 1 projeto com sucesso (formato objeto)');
@@ -135,33 +135,74 @@ function validateProject(project) {
     throw new Error('Projeto inválido: null ou undefined');
   }
   
-  // Validar campos essenciais
-  const validProject = {
+  // Verificar se é um objeto vazio
+  if (Object.keys(project).length === 0) {
+    throw new Error('Projeto inválido: objeto vazio');
+  }
+  
+  // Criar uma cópia profunda para garantir que não há referências compartilhadas
+  const validProject = JSON.parse(JSON.stringify({
     project: project.project || "Projeto sem nome",
-    ...project
-  };
+  }));
+  
+  // Copiar as propriedades existentes
+  Object.keys(project).forEach(key => {
+    // Não copiar diretamente arrays ou objetos para evitar referências compartilhadas
+    if (key !== 'dependencies' && key !== 'requirements') {
+      validProject[key] = project[key];
+    }
+  });
   
   // Garantir objeto requirements
-  if (!validProject.requirements) {
+  if (!project.requirements || typeof project.requirements !== 'object') {
     validProject.requirements = {
       java: project.javaVersion || null,
       kotlin: project.kotlinVersion || null,
       gradle: project.gradleVersion || null,
       spring_boot: project.springBootVersion || null
     };
+  } else {
+    // Clone requirements para evitar compartilhar referência
+    validProject.requirements = { ...project.requirements };
   }
   
+  // Tratar versão "NENHUM" como null para padronizar
+  if (validProject.requirements.java === "NENHUM") validProject.requirements.java = null;
+  if (validProject.requirements.kotlin === "NENHUM") validProject.requirements.kotlin = null;
+  if (validProject.requirements.gradle === "NENHUM") validProject.requirements.gradle = null;
+  if (validProject.requirements.spring_boot === "NENHUM") validProject.requirements.spring_boot = null;
+  
   // Validar dependências
-  if (!validProject.dependencies) {
+  if (!project.dependencies) {
     validProject.dependencies = [];
-  } else if (!Array.isArray(validProject.dependencies)) {
+  } else if (!Array.isArray(project.dependencies)) {
     window.logError({
       message: `Projeto ${validProject.project} tem dependências em formato inválido`,
       type: window.ErrorType.VALIDATION,
       level: window.ErrorLevel.WARNING,
-      context: { projectName: validProject.project, dependencies: validProject.dependencies }
+      context: { projectName: validProject.project }
     });
     validProject.dependencies = [];
+  } else {
+    // Filtrar dependências inválidas e criar novo array
+    validProject.dependencies = project.dependencies
+      .filter(dep => dep && typeof dep === 'object' && Object.keys(dep).length > 0)
+      .map(dep => {
+        // Criar nova instância de cada dependência
+        const validDep = { ...dep };
+        if (!validDep.name) validDep.name = "Indefinido";
+        if (!validDep.group) validDep.group = "Indefinido";
+        if (!validDep.version) validDep.version = "0.0.0";
+        
+        // Garantir que projects também é um novo array
+        if (validDep.projects && Array.isArray(validDep.projects)) {
+          validDep.projects = [...validDep.projects];
+        } else {
+          validDep.projects = [];
+        }
+        
+        return validDep;
+      });
   }
   
   return validProject;
@@ -172,72 +213,149 @@ function validateProject(project) {
  * @returns {Promise<Array>} - Lista de arquivos disponíveis com timestamps
  */
 async function listDependencyFiles() {
+  console.log('🔍 [listDependencyFiles] Iniciando...');
+  console.log('🔍 [listDependencyFiles] DEPENDENCIES_HISTORY_ENABLED:', window.Config.DEPENDENCIES_HISTORY_ENABLED);
+  
   if (!window.Config.DEPENDENCIES_HISTORY_ENABLED) {
-    return [{ path: window.Config.DEPENDENCIES_JSON_PATH, isLatest: true }];
+    console.log('🔍 [listDependencyFiles] Histórico desabilitado, retornando arquivo padrão');
+    return [{ path: window.Config.DEPENDENCIES_JSON_PATH }];
   }
 
   try {
-    // Tentar com o arquivo JSON estático
-    // Tentar obter a lista direta dos arquivos na pasta data/
-    try {
-      const response = await fetch('data/');
-      if (response.ok) {
-        const files = await response.json();
-        return files
-          .filter(file => file.name.startsWith('dependencies_') && file.name.endsWith('.json'))
-          .map(file => ({
-            path: `data/${file.name}`,
-            name: file.name,
-            date: file.name.slice(13, 21)
-          }));
-      }
-    } catch (error) {
-      console.warn('Não foi possível listar os arquivos diretamente:', error.message);
-      return [{ path: window.Config.DEPENDENCIES_JSON_PATH }];
-    }
+    console.log('🔍 [listDependencyFiles] Carregando lista de arquivos reais de dependências...');
     
-    // Procurar por arquivos de dependências com padrão de nome
+    // Primeiro, tentar carregar a lista de arquivos gerada pelo script
     try {
-      // Esta é uma implementação limitada que funciona apenas com servidores que suportam listagem de diretório
-      const dirResponse = await fetch('data/');
+      console.log('🔍 [listDependencyFiles] Tentando carregar dependency-files-list.json...');
+      const listResponse = await fetch('data/dependency-files-list.json');
       
-      if (dirResponse.ok) {
-        const text = await dirResponse.text();
-        const matches = text.match(/dependencies_[0-9_]+\.json/g) || [];
+      if (listResponse.ok) {
+        const filesList = await listResponse.json();
+        console.log('🔍 [listDependencyFiles] Lista carregada:', filesList);
         
-        if (matches.length > 0) {
-          return matches.map(filename => ({
-            path: `data/${filename}`,
-            name: filename,
-            date: filename.replace('dependencies_', '').replace('.json', '').replace('_', ' ')
-          })).concat([{ 
-            path: window.Config.DEPENDENCIES_JSON_PATH, 
-            name: 'dependencies.json', 
-            isLatest: true,
-            date: 'Atual (symlink)'
-          }]);
+        if (Array.isArray(filesList) && filesList.length > 0) {
+          // Validar que os arquivos ainda existem
+          const validFiles = [];
+          
+          for (const fileInfo of filesList) {
+            try {
+              const response = await fetch(fileInfo.path, { method: 'HEAD' });
+              if (response.ok) {
+                // Criar nome mais amigável baseado no timestamp
+                let displayName = fileInfo.name;
+                if (fileInfo.date) {
+                  displayName = fileInfo.date;
+                }
+                
+                validFiles.push({
+                  path: fileInfo.path,
+                  name: displayName,
+                  date: fileInfo.date || new Date().toISOString().substring(0, 19).replace('T', ' '),
+                  originalName: fileInfo.name,
+                  timestamp: fileInfo.date
+                });
+                console.log(`✅ [listDependencyFiles] Arquivo validado: ${fileInfo.name}`);
+              } else {
+                console.warn(`⚠️ [listDependencyFiles] Arquivo listado mas não encontrado: ${fileInfo.path}`);
+              }
+            } catch (err) {
+              console.warn(`⚠️ [listDependencyFiles] Erro ao validar ${fileInfo.path}:`, err.message);
+            }
+          }
+          
+          if (validFiles.length > 0) {
+            // Ordenar por timestamp (mais recente primeiro)
+            validFiles.sort((a, b) => {
+              if (a.timestamp && b.timestamp) {
+                return new Date(b.timestamp) - new Date(a.timestamp);
+              }
+              return 0;
+            });
+            
+            console.log(`🎉 [listDependencyFiles] ${validFiles.length} arquivos reais encontrados`);
+            return validFiles;
+          }
         }
       }
-    } catch (dirError) {
-      console.warn('Erro ao listar diretório:', dirError.message);
+    } catch (err) {
+      console.warn('⚠️ [listDependencyFiles] Erro ao carregar dependency-files-list.json:', err.message);
     }
     
-    // Se todas as tentativas falharem, retornar apenas o arquivo padrão
-    console.warn('Não foi possível listar arquivos históricos. Usando arquivo padrão.');
-    return [{ 
-      path: window.Config.DEPENDENCIES_JSON_PATH, 
-      name: 'dependencies.json', 
-      isLatest: true,
-      date: 'Atual' 
+    // Fallback: buscar arquivos automaticamente por padrão de timestamp
+    console.log('🔍 [listDependencyFiles] Fallback: Buscando arquivos por padrão de timestamp...');
+    const files = [];
+    
+    // Buscar arquivos com timestamp (formato: dependencies_YYYYMMDD_HHMMSS.json)
+    try {
+      const today = new Date();
+      
+      // Verificar últimos 30 dias para encontrar arquivos gerados por extração
+      for (let day = 0; day < 30; day++) {
+        const currentDate = new Date(today);
+        currentDate.setDate(today.getDate() - day);
+        
+        const year = currentDate.getFullYear();
+        const month = String(currentDate.getMonth() + 1).padStart(2, '0');
+        const date = String(currentDate.getDate()).padStart(2, '0');
+        
+        // Verificar algumas horas estratégicas do dia
+        for (const hour of [0, 6, 12, 18, 23]) {
+          for (const minute of [0, 30]) {
+            const hourStr = String(hour).padStart(2, '0');
+            const minuteStr = String(minute).padStart(2, '0');
+            
+            const filename = `dependencies_${year}${month}${date}_${hourStr}${minuteStr}00.json`;
+            const path = `data/${filename}`;
+            
+            try {
+              const response = await fetch(path, { method: 'HEAD' });
+              if (response.ok) {
+                files.push({
+                  path: path,
+                  name: `${year}-${month}-${date} ${hourStr}:${minuteStr}:00`,
+                  date: `${year}-${month}-${date} ${hourStr}:${minuteStr}:00`,
+                  originalName: filename,
+                  timestamp: `${year}-${month}-${date} ${hourStr}:${minuteStr}:00`
+                });
+                console.log(`✅ [listDependencyFiles] Arquivo com timestamp encontrado: ${filename}`);
+              }
+            } catch (err) {
+              // Ignorar arquivos não encontrados
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ [listDependencyFiles] Erro ao buscar arquivos de extração:', error);
+    }
+    
+    if (files.length > 0) {
+      // Ordenar por timestamp (mais recente primeiro)
+      files.sort((a, b) => {
+        if (a.timestamp && b.timestamp) {
+          return new Date(b.timestamp) - new Date(a.timestamp);
+        }
+        return 0;
+      });
+      
+      console.log(`🎉 [listDependencyFiles] ${files.length} arquivos encontrados`);
+      return files;
+    }
+    
+    // Se nenhum arquivo foi encontrado, retornar lista vazia indicando que não há histórico
+    console.warn('⚠️ [listDependencyFiles] Nenhum arquivo de dependências encontrado');
+    return [{
+      path: 'data/dependencies.json',
+      name: 'Sem arquivos de histórico disponíveis',
+      date: new Date().toISOString().substring(0, 19).replace('T', ' ')
     }];
+    
   } catch (error) {
-    console.warn('Erro ao listar arquivos históricos:', error);
-    // Em caso de erro, retornar apenas o arquivo padrão
-    return [{ 
-      path: window.Config.DEPENDENCIES_JSON_PATH, 
-      name: 'dependencies.json', 
-      isLatest: true,
-      date: 'Atual' 
+    console.error('❌ [listDependencyFiles] Erro ao carregar arquivos:', error);
+    return [{
+      path: 'data/dependencies.json',
+      name: 'Erro ao carregar histórico',
+      date: new Date().toISOString().substring(0, 19).replace('T', ' ')
     }];
   }
 }

@@ -204,14 +204,25 @@ class ProjectView {
             const projectCount = document.getElementById('project-count');
             const dependencyCount = document.getElementById('dependency-count');
             
+            // Contagem de projetos
+            const validProjectCount = Array.isArray(projects) ? projects.length : 0;
             if (projectCount) {
-                projectCount.textContent = projects.length;
+                projectCount.textContent = validProjectCount;
+                console.log(`Contadores atualizados: ${validProjectCount} projetos`);
             }
             
+            // Contagem de dependências - verificação mais robusta
             if (dependencyCount) {
-                const totalDeps = projects.reduce((total, project) => 
-                    total + (project.dependencies?.length || 0), 0);
+                let totalDeps = 0;
+                if (Array.isArray(projects)) {
+                    projects.forEach(project => {
+                        if (project && Array.isArray(project.dependencies)) {
+                            totalDeps += project.dependencies.length;
+                        }
+                    });
+                }
                 dependencyCount.textContent = totalDeps;
+                console.log(`Contadores atualizados: ${totalDeps} dependências`);
             }
         } catch (error) {
             logError({

@@ -165,19 +165,37 @@
     ];
 
     // Iniciar carregamento
-    loadScriptsSequentially(scripts).then(() => {
-      // Inicializar o seletor de histórico após todos os scripts serem carregados
+    loadScriptsSequentially(scripts).then(async () => {
       console.log("Todos os scripts carregados, iniciando aplicação...");
       
-      // Garantir que a inicialização seja feita após tudo estar carregado
-      setTimeout(() => {
-        if (window.historySelector && window.historySelector.init) {
-          console.log("Inicializando seletor de histórico...");
-          window.historySelector.init();
+      // Primeiro, inicializar o app principal
+      if (window.initApp) {
+        console.log("Inicializando app principal...");
+        await window.initApp();
+        console.log("App principal inicializado. _currentFilePath:", window._currentFilePath);
+      } else {
+        console.error("Função initApp não encontrada!");
+        return;
+      }
+      
+      // Agora inicializar o seletor de histórico
+      if (window.historySelector && window.historySelector.init) {
+        console.log("Inicializando seletor de histórico...");
+        
+        await window.historySelector.init();
+        
+        // Sincronizar o seletor com o arquivo atualmente carregado
+        if (window._currentFilePath) {
+          console.log(`Sincronizando seletor com arquivo atual: ${window._currentFilePath}`);
+          window.historySelector.syncWithCurrentFile(window._currentFilePath);
         } else {
-          console.error("Módulo historySelector não foi encontrado!");
+          console.warn("_currentFilePath ainda não foi definido após inicialização do app!");
         }
-      }, 100);
+      } else {
+        console.error("Módulo historySelector não foi encontrado!");
+      }
+      
+      console.log("Inicialização completa!");
     });
   </script>
 </body>

@@ -6,7 +6,7 @@
 // Configurações globais da aplicação
 const Config = {
   // Caminhos de arquivos e versões
-  DEPENDENCIES_JSON_PATH: 'data/dependencies.json', // Symlink para o mais recente
+  DEPENDENCIES_JSON_PATH: 'data/dependencies_20250527_185016.json', // Arquivo mais recente de dependências
   DEPENDENCIES_HISTORY_PATTERN: 'data/dependencies_*.json', // Padrão para arquivos históricos
   DEPENDENCIES_HISTORY_ENABLED: true, // Habilitar funcionalidade de histórico
   APP_VERSION: '1.0.0',

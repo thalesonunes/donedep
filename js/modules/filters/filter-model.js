@@ -112,9 +112,20 @@ function validateFilterCombination() {
  */
 function getCompatibleOptions(filterToUpdate, currentSelections = window._activeFilters) {
   try {
-    let filteredProjects = [...(window._allProjects || [])];
+    // Verificar se temos dados para trabalhar
+    if (!window._allProjects || !Array.isArray(window._allProjects) || window._allProjects.length === 0) {
+      console.warn(`Não há projetos disponíveis para obter opções de ${filterToUpdate}`);
+      return [];
+    }
     
-    Object.entries(currentSelections).forEach(([key, value]) => {
+    // Garantir que estamos trabalhando com os dados mais atualizados
+    let filteredProjects = [...window._allProjects];
+    console.log(`Obtendo opções para ${filterToUpdate} com ${filteredProjects.length} projetos disponíveis`);
+    
+    // Se não temos seleções atuais válidas, usar objeto vazio
+    const selections = currentSelections || {};
+    
+    Object.entries(selections).forEach(([key, value]) => {
       if (value && key !== filterToUpdate) {
         console.log(`Aplicando filtro ${key}=${value} para obter opções de ${filterToUpdate}`);
         
@@ -248,6 +259,45 @@ function debugFilterRelationships() {
   });
 }
 
+/**
+ * Diagnóstica o estado atual dos filtros e dados
+ * Função de debug para ajudar a identificar problemas
+ */
+function diagnoseFilters() {
+  console.group('Diagnóstico de Filtros');
+  console.log('Projetos carregados:', window._allProjects?.length || 0);
+  
+  // Ver alguns exemplos de projetos
+  if (window._allProjects && window._allProjects.length > 0) {
+    console.log('Exemplo de projeto:', window._allProjects[0]);
+    
+    // Verificar requisitos disponíveis
+    const javaVersions = new Set();
+    const kotlinVersions = new Set();
+    const gradleVersions = new Set();
+    const springVersions = new Set();
+    
+    window._allProjects.forEach(project => {
+      if (project?.requirements) {
+        if (project.requirements.java) javaVersions.add(project.requirements.java);
+        if (project.requirements.kotlin) kotlinVersions.add(project.requirements.kotlin);
+        if (project.requirements.gradle) gradleVersions.add(project.requirements.gradle);
+        if (project.requirements.spring_boot) springVersions.add(project.requirements.spring_boot);
+      }
+    });
+    
+    console.log('Versões de Java disponíveis:', Array.from(javaVersions));
+    console.log('Versões de Kotlin disponíveis:', Array.from(kotlinVersions));
+    console.log('Versões de Gradle disponíveis:', Array.from(gradleVersions));
+    console.log('Versões de Spring Boot disponíveis:', Array.from(springVersions));
+  }
+  
+  // Verificar filtros ativos
+  console.log('Filtros ativos:', window._activeFilters);
+  
+  console.groupEnd();
+}
+
 window.filterModel = {
   initializeFilterModel,
   updateFilter,
@@ -333,3 +383,4 @@ window.getActiveFilters = getActiveFilters;
 window.getActiveFilterLabels = getActiveFilterLabels;
 window.hasActiveFilters = hasActiveFilters;
 window.debugFilterRelationships = debugFilterRelationships;
+window.diagnoseFilters = diagnoseFilters;

@@ -29,13 +29,18 @@ class FilterView {
         return;
       }
       
+      // Verificar se temos valores válidos
+      const validValues = Array.isArray(values) ? values : [];
+      console.log(`Preenchendo dropdown ${id} com ${validValues.length} valores válidos`);
+      
       select.innerHTML = '';
       
       // Se não há valores para mostrar
-      if (!values || values.length === 0) {
-        select.disabled = true;
+      if (validValues.length === 0) {
+        select.disabled = false; // Deixamos habilitado, mas sem opções
         const optEmpty = document.createElement('option');
-        optEmpty.textContent = 'Nenhum valor disponível';
+        optEmpty.value = '';
+        optEmpty.textContent = 'Todas';
         select.appendChild(optEmpty);
         return;
       }
@@ -119,11 +124,25 @@ class FilterView {
       const selected = window.getActiveFilters();
       console.log("Atualizando dropdowns com seleções:", selected);
       
+      // Verificar se os dados são válidos
+      if (!window._allProjects || !Array.isArray(window._allProjects) || window._allProjects.length === 0) {
+        console.warn("Não há projetos disponíveis para atualizar os dropdowns");
+        // Resetar todos os dropdowns para estado vazio
+        this.fillDropdown('filter-java', [], null);
+        this.fillDropdown('filter-gradle', [], null);
+        this.fillDropdown('filter-kotlin', [], null);
+        this.fillDropdown('filter-spring', [], null);
+        return;
+      }
+      
+      // Obter as opções compatíveis com base nos dados atuais
+      console.log("Obtendo opções compatíveis com", window._allProjects.length, "projetos disponíveis");
       const javaCompatibleOptions = window.getCompatibleOptions('java', selected);
       const gradleCompatibleOptions = window.getCompatibleOptions('gradle', selected);
       const kotlinCompatibleOptions = window.getCompatibleOptions('kotlin', selected);
       const springBootCompatibleOptions = window.getCompatibleOptions('spring_boot', selected);
       
+      // Preencher os dropdowns com as opções compatíveis
       this.fillDropdown('filter-java', javaCompatibleOptions, selected.java);
       this.fillDropdown('filter-gradle', gradleCompatibleOptions, selected.gradle);
       this.fillDropdown('filter-kotlin', kotlinCompatibleOptions, selected.kotlin);
@@ -167,8 +186,20 @@ class FilterView {
   static clearAllFilters() {
     console.log("Limpando todos os filtros");
     
-    window.resetFilters();
+    // Verificar se a função resetFilters existe
+    if (typeof window.resetFilters === 'function') {
+      window.resetFilters();
+    } else {
+      // Caso a função não exista, resetar manualmente
+      window._activeFilters = {
+        java: null,
+        kotlin: null,
+        gradle: null,
+        spring_boot: null
+      };
+    }
     
+    // Resetar UI
     ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
       const dropdown = document.getElementById('filter-' + type);
       if (dropdown) {
@@ -177,6 +208,7 @@ class FilterView {
       }
     });
     
+    // Atualizar dropdowns
     this.updateAllDropdowns();
     
     console.log("Filtros limpos com sucesso");

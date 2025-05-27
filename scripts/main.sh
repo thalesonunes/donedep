@@ -25,6 +25,7 @@ JSON_FILE="$DATA_DIR/dependencies_${TIMESTAMP}.json"
 JSON_SYMLINK="$DATA_DIR/dependencies.json"
 LOG_FILE="$DATA_DIR/donedep.log"
 REPO_CACHE_DIR="$DATA_DIR/repo_cache"
+DEPENDENCY_LIST_FILE="$DATA_DIR/dependency-files-list.json"
 
 # Função para atualizar o symlink para o arquivo mais recente
 update_symlink() {
@@ -58,6 +59,51 @@ setup_logging() {
   }
   
   file_log "Configuração de log concluída"
+}
+
+# Função para gerar o arquivo de lista de dependências
+generate_dependency_list() {
+  log "Gerando arquivo de lista de dependências..." | tee -a "$LOG_FILE"
+  
+  # Início do JSON
+  echo "[" > "$DEPENDENCY_LIST_FILE"
+  
+  # Listar todos os arquivos de dependências em ordem reversa (mais recente primeiro)
+  is_first=true
+  for file in $(ls -t "$DATA_DIR"/dependencies_*.json 2>/dev/null); do
+    filename=$(basename "$file")
+    
+    # Extrair timestamp do nome do arquivo
+    if [[ $filename =~ dependencies_([0-9]{4})([0-9]{2})([0-9]{2})_([0-9]{2})([0-9]{2})([0-9]{2})\.json ]]; then
+      year="${BASH_REMATCH[1]}"
+      month="${BASH_REMATCH[2]}"
+      day="${BASH_REMATCH[3]}"
+      hour="${BASH_REMATCH[4]}"
+      minute="${BASH_REMATCH[5]}"
+      second="${BASH_REMATCH[6]}"
+      
+      # Adicionar vírgula se não for o primeiro
+      if ! $is_first; then
+        echo "," >> "$DEPENDENCY_LIST_FILE"
+      fi
+      is_first=false
+      
+      # Adicionar entrada ao JSON
+      cat >> "$DEPENDENCY_LIST_FILE" << EOF
+  {
+    "path": "data/$filename",
+    "name": "$filename",
+    "date": "$year-$month-$day $hour:$minute:$second"
+  }
+EOF
+    fi
+  done
+  
+  # Finalizar JSON
+  echo "" >> "$DEPENDENCY_LIST_FILE"
+  echo "]" >> "$DEPENDENCY_LIST_FILE"
+  
+  log "Lista de dependências gerada em: $DEPENDENCY_LIST_FILE" | tee -a "$LOG_FILE"
 }
 
 # Função principal
@@ -272,6 +318,8 @@ main() {
   log "Log detalhado disponível em: $LOG_FILE"
   
   # A atualização do symlink e a limpeza dos arquivos antigos já foi feita acima
+  # Gerar a lista de arquivos de dependências
+  generate_dependency_list
   
   return 0
 }
