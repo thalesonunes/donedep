@@ -52,6 +52,12 @@ extract_java_version() {
     "$project_dir/app/build.gradle.kts"
   )
   
+  # Adicionar arquivos de submodulos para projetos multi-módulo
+  # Buscar por subdiretórios que contenham build.gradle ou build.gradle.kts
+  while IFS= read -r -d '' sub_gradle_file; do
+    gradle_files+=("$sub_gradle_file")
+  done < <(find "$project_dir" -maxdepth 2 -name "build.gradle*" -not -path "$project_dir/build.gradle*" -print0 2>/dev/null)
+  
   # Procurar em build.gradle e build.gradle.kts
   for gradle_file in "${gradle_files[@]}"; do
     if [ -f "$gradle_file" ]; then
@@ -128,6 +134,11 @@ extract_java_version() {
         debug_log "Encontrado sourceCompatibility número direto em $gradle_file: $java_version"
         # Debug
         debug_log "Extraído Java versão $java_version de sourceCompatibility direto em $gradle_file"
+      # Verificar padrão languageVersion = JavaLanguageVersion.of(XX) (sem .set())
+      elif [ -z "$java_version" ] && grep -q "languageVersion\s*=\s*JavaLanguageVersion\.of" "$gradle_file"; then
+        java_version=$(grep -oP "languageVersion\s*=\s*JavaLanguageVersion\.of\(\K[0-9]+" "$gradle_file" | head -1)
+        debug_log "Encontrado languageVersion = JavaLanguageVersion.of() em $gradle_file: $java_version"
+        debug_log "Extraído Java versão $java_version de languageVersion = JavaLanguageVersion.of() em $gradle_file"
       # Verificar padrão java { toolchain { languageVersion.set(JavaLanguageVersion.of(XX)) } } PRIMEIRO
       elif [ -z "$java_version" ] && grep -q "java\s*{" "$gradle_file" && grep -q "toolchain\s*{" "$gradle_file"; then
         # Buscar em blocos java { toolchain { languageVersion.set(JavaLanguageVersion.of(XX)) } }
@@ -305,6 +316,21 @@ extract_kotlin_version() {
   local project_dir="$1"
   local kotlin_version=""
   
+  debug_log "Extraindo Kotlin version do projeto $(basename "$project_dir")"
+  
+  # Primeiro tentar ler do gradle.properties já que é o mais direto
+  if [ -f "$project_dir/gradle.properties" ]; then
+    debug_log "Procurando kotlinVersion em gradle.properties"
+    if grep -q "^kotlinVersion=" "$project_dir/gradle.properties"; then
+      kotlin_version=$(grep "^kotlinVersion=" "$project_dir/gradle.properties" | cut -d'=' -f2 | tr -d '[:space:]' | tr -d '"')
+      debug_log "Encontrado kotlinVersion=$kotlin_version em gradle.properties"
+      if [ -n "$kotlin_version" ]; then
+        echo "$kotlin_version"
+        return 0
+      fi
+    fi
+  fi
+  
   # Procurar em arquivos Gradle
   local gradle_files=(
     "$project_dir/build.gradle"
@@ -317,9 +343,13 @@ extract_kotlin_version() {
       # Procurar padrões comuns de definição da versão Kotlin
       if grep -q "kotlin[A-Za-z]*Version" "$gradle_file"; then
         kotlin_version=$(grep -oP "kotlin[A-Za-z]*Version\s*=\s*['\"]\K[0-9]+\.[0-9]+(\.[0-9]+)?" "$gradle_file" | head -1)
-      elif grep -q "id[[:space:]]*('|\")kotlin" "$gradle_file" || grep -q "id[[:space:]]*('|\")org.jetbrains.kotlin" "$gradle_file"; then
-        # Procurar em plugins { id("org.jetbrains.kotlin...") version "X.Y.Z" }
+      elif grep -q "id[[:space:]]*('|\")kotlin" "$gradle_file" || grep -q "id[[:space:]]*('|\")org.jetbrains.kotlin" "$gradle_file" || grep -q "kotlin(" "$gradle_file"; then
+        # Procurar em plugins { id("org.jetbrains.kotlin...") version "X.Y.Z" } ou kotlin("jvm") version "X.Y.Z"
         kotlin_version=$(grep -oP "id(\s*\(\s*|\s+)['\"](kotlin|org\.jetbrains\.kotlin)[^'\"]*['\"][^'\"]*['\"](\s*\))?\s+version\s+['\"]\K[0-9]+\.[0-9]+(\.[0-9]+)?" "$gradle_file" | head -1)
+        # Se não encontrou no formato id(), tentar kotlin("jvm") version
+        if [ -z "$kotlin_version" ]; then
+          kotlin_version=$(grep -oP "kotlin\([\"'][^\"']*[\"']\)\s+version\s+[\"']\K[0-9]+\.[0-9]+(\.[0-9]+)?" "$gradle_file" | head -1)
+        fi
       elif grep -q "kotlin[[:space:]]*{" "$gradle_file"; then
         # Procurar em bloco kotlin { version = "X.Y.Z" }
         if grep -q "version\s*=" "$gradle_file"; then
@@ -423,13 +453,31 @@ extract_spring_boot_version() {
         
         # Se não encontrou no gradlePluginVersion, procurar diretamente no classpath do buildscript
         if [ -z "$spring_boot_version" ] && grep -q "classpath.*org\.springframework\.boot:spring-boot-gradle-plugin:" "$gradle_file"; then
+          # Primeiro tentar extrair versão direta
           spring_boot_version=$(grep -oP "org\.springframework\.boot:spring-boot-gradle-plugin:\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          # Se não encontrou versão direta, pode ser uma variável como ${springBootVersion}
+          if [ -z "$spring_boot_version" ] && grep -q "classpath.*org\.springframework\.boot:spring-boot-gradle-plugin:\\\${" "$gradle_file"; then
+            # Extrair o nome da variável
+            local var_name=$(grep -oP "org\.springframework\.boot:spring-boot-gradle-plugin:\\\$\{\K[^}]+(?=})" "$gradle_file" | head -1)
+            if [ -n "$var_name" ]; then
+              # Tentar resolver a variável do gradle.properties
+              if [ -f "$project_dir/gradle.properties" ] && grep -q "^${var_name}=" "$project_dir/gradle.properties"; then
+                spring_boot_version=$(grep "^${var_name}=" "$project_dir/gradle.properties" | cut -d'=' -f2 | tr -d '[:space:]' | tr -d '"')
+                debug_log "Resolvido ${var_name} do gradle.properties: $spring_boot_version"
+              fi
+            fi
+          fi
           debug_log "Encontrado versão no spring-boot-gradle-plugin do buildscript: $spring_boot_version"
         fi
         
-        # Verificar pelo plugin do Spring Boot
-        if [ -z "$spring_boot_version" ] && grep -q "id[[:space:]]*('|\")org.springframework.boot['\"]" "$gradle_file"; then
-          spring_boot_version=$(grep -oP "id(\s*\(\s*|\s+)['\"]org\.springframework\.boot[^'\"]*['\"][^'\"]*['\"](\s*\))?\s+version\s+['\"]\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+        # Verificar pelo plugin do Spring Boot (sintaxe tradicional e Kotlin DSL)
+        if [ -z "$spring_boot_version" ] && (grep -q "id[[:space:]]*['\"]org.springframework.boot['\"]" "$gradle_file" || grep -q "id(\"org.springframework.boot\")" "$gradle_file"); then
+          # Tentar primeiro o padrão tradicional com aspas (simples ou duplas)
+          spring_boot_version=$(grep -oP "id\s+['\"]org\.springframework\.boot['\"].*version\s+['\"]?\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          # Se não encontrou, tentar padrão Kotlin DSL: id("org.springframework.boot") version "X.Y.Z"
+          if [ -z "$spring_boot_version" ]; then
+            spring_boot_version=$(grep -oP "id\([\"']org\.springframework\.boot[\"']\)\s+version\s+[\"']\K[0-9]+\.[0-9]+\.[0-9]+(\.[A-Z0-9_-]+)?" "$gradle_file" | head -1)
+          fi
           debug_log "Encontrado versão no plugin: $spring_boot_version"
         fi
       fi
