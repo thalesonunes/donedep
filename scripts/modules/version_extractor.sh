@@ -115,14 +115,14 @@ extract_java_version() {
       fi
       
       # Se não encontrou no ext.jdkVersion, verificar o formato 1.x (mais específico)
-      if [ -z "$java_version" ] && grep -q "sourceCompatibility\s*=\s*1\.[0-9]\+" "$gradle_file"; then
-        java_version=$(grep -oP "sourceCompatibility\s*=\s*1\.\K[0-9]+" "$gradle_file" | sed -E 's/([0-9]+).*/1.\1/g' | head -1)
+      if [ -z "$java_version" ] && (grep -q "sourceCompatibility.*=.*['\"]1\.[0-9]" "$gradle_file" || grep -q "sourceCompatibility.*=.*1\.[0-9]" "$gradle_file"); then
+        java_version=$(grep -oP "sourceCompatibility\s*=\s*['\"]?\K1\.[0-9]+(?=['\"]?)" "$gradle_file" | head -1)
         debug_log "Encontrado sourceCompatibility 1.x em $gradle_file: $java_version"
         debug_log "Extraído Java versão $java_version de sourceCompatibility 1.x em $gradle_file"
-      # Depois verificar o padrão simples sourceCompatibility = 17 diretamente
-      elif grep -q "sourceCompatibility\s*=\s*[0-9]\+" "$gradle_file"; then
-        # Extrair número diretamente usando grep -oP
-        java_version=$(grep -oP "sourceCompatibility\s*=\s*\K[0-9]+" "$gradle_file" | head -1)
+      # Depois verificar o padrão simples sourceCompatibility = 17 diretamente (com ou sem aspas)
+      elif [ -z "$java_version" ] && (grep -q "sourceCompatibility.*=.*['\"][0-9]" "$gradle_file" || grep -q "sourceCompatibility.*=.*[^'\"][0-9]" "$gradle_file"); then
+        # Extrair número diretamente usando grep -oP, considerando aspas opcionais
+        java_version=$(grep -oP "sourceCompatibility\s*=\s*['\"]?\K[0-9]+(?=['\"]?)" "$gradle_file" | head -1)
         debug_log "Encontrado sourceCompatibility número direto em $gradle_file: $java_version"
         # Debug
         debug_log "Extraído Java versão $java_version de sourceCompatibility direto em $gradle_file"
