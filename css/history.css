@@ -8,9 +8,11 @@
 .history-selector-container {
   display: flex;
   align-items: center;
+  justify-content: center;
   position: absolute;
   top: 0;
-  right: 0;
+  left: 50%;
+  transform: translateX(-50%);
   padding: 8px;
   gap: 8px;
 }
@@ -78,10 +80,11 @@
   .history-selector-container {
     position: relative;
     top: 0;
-    right: 0;
+    left: auto;
+    transform: none;
     width: 100%;
     margin-top: 20px;
-    justify-content: flex-end;
+    justify-content: center;
   }
   
   .history-file-selector {
