@@ -3,13 +3,14 @@ donedep-backup/
 data/repo_cache/*
 !data/repo_cache/.gitkeep
 
-# Arquivos de dados e logs
+# Arquivos de dados e logs gerados automaticamente
 data/dependencies*.json
-data/dependencies.json.formatted
+data/dependency-files-list.json
 data/*.json.raw
 data/*.json.bak
 data/*.log
 !data/.gitkeep
+
 # Arquivos temporários
 *.tmp
 *.temp
@@ -19,14 +20,7 @@ data/*.log
 *.old
 *.original
 *.backup
-*.simple
-*.log
-.last_install
-.raw
-# Node.js
-node_modules/
-npm-debug.log
-yarn-error.log
+
 # Arquivos de sistema
 .DS_Store
 Thumbs.db
