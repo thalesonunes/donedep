@@ -34,6 +34,11 @@
   color: #ffffff;
 }
 
+.dependency-configuration {
+  font-size: 14px;
+  color: #737373;
+}
+
 .dependency-version {
   display: flex;
   align-items: center;

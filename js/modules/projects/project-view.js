@@ -70,6 +70,7 @@ class ProjectView {
                         <div class="dependency-name" title="${window.utils.escapeHTML(dep.group)}:${window.utils.escapeHTML(dep.name)}">
                             ${window.utils.escapeHTML(dep.name)}
                         </div>
+                        <div class="dependency-configuration">(${window.utils.escapeHTML(dep.configuration)})</div>
                         <div class="dependency-version" title="Versão: ${window.utils.escapeHTML(dep.version)}">
                             ${window.utils.escapeHTML(dep.version)}
                         </div>
@@ -409,6 +410,7 @@ class ProjectView {
             card.innerHTML = `
               <div class="dependency-group">${window.utils.escapeHTML(dep.group)}</div>
               <div class="dependency-name">${window.utils.escapeHTML(dep.name)}</div>
+              <div class="dependency-configuration">(${window.utils.escapeHTML(dep.configuration)})</div>
               <div class="dependency-version">
                 <span class="${versionClass}" id="version-${dep.id || Math.random().toString(36).substring(2)}">${window.utils.escapeHTML(dep.version)}</span>
                 ${warningInfo}
