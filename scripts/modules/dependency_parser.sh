@@ -159,7 +159,8 @@ extract_version_variables() {
             continue
           fi
           
-          if [[ "$line" =~ set\([[:space:]]*\"([a-zA-Z0-9_]+Version)\"[[:space:]]*,[[:space:]]*\"([^\"]+)\" ]]; then
+          # Padrão 1: set("propertyName", "value")
+          if [[ "$line" =~ set\([[:space:]]*\"([a-zA-Z0-9_]+)\"[[:space:]]*,[[:space:]]*\"([^\"]+)\" ]]; then
             local var_name="${BASH_REMATCH[1]}"
             local var_value="${BASH_REMATCH[2]}"
             
@@ -171,8 +172,27 @@ extract_version_variables() {
             fi
             variables="$variables\"$var_name\":\"$var_value\""
             
-            debug_log "Extraída variável do bloco extra do Kotlin DSL: $var_name = $var_value"
+            debug_log "Extraída variável do bloco extra (set): $var_name = $var_value"
           fi
+        fi
+      done <<< "$file_content"
+      
+      # Procurar também por padrões extra["propertyName"] = "value" fora de blocos
+      while IFS= read -r line; do
+        # Padrão 2: extra["propertyName"] = "value"
+        if [[ "$line" =~ extra\[[[:space:]]*\"([a-zA-Z0-9_]+)\"[[:space:]]*\][[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+          local var_name="${BASH_REMATCH[1]}"
+          local var_value="${BASH_REMATCH[2]}"
+          
+          # Adicionar ao JSON
+          if ! $first; then
+            variables="$variables,"
+          else
+            first=false
+          fi
+          variables="$variables\"$var_name\":\"$var_value\""
+          
+          debug_log "Extraída variável extra[]: $var_name = $var_value"
         fi
       done <<< "$file_content"
     fi
@@ -835,6 +855,21 @@ parse_kotlin_dsl_dependencies() {
       # Adicionar também ao array props para uso posterior
       props["$var_name"]="$var_value"
       debug_log "Variável Kotlin DSL extraída: $var_name = $var_value"
+    fi
+  done < "$build_file"
+  
+  # Procurar por propriedades extra["propertyName"] = "value"
+  while IFS= read -r line; do
+    if [[ "$line" =~ extra\[[[:space:]]*\"([a-zA-Z0-9_]+)\"[[:space:]]*\][[:space:]]*=[[:space:]]*\"([^\"]+)\" ]]; then
+      local var_name="${BASH_REMATCH[1]}"
+      local var_value="${BASH_REMATCH[2]}"
+      
+      # Adicionar ao objeto JSON
+      kotlin_dsl_vars=$(echo "$kotlin_dsl_vars" | jq --arg name "$var_name" --arg value "$var_value" '. + {($name): $value}' 2>/dev/null || echo "$kotlin_dsl_vars")
+      
+      # Adicionar também ao array props para uso posterior
+      props["$var_name"]="$var_value"
+      debug_log "Propriedade extra[] extraída: $var_name = $var_value"
     fi
   done < "$build_file"
   
