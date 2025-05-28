@@ -141,17 +141,17 @@ function getUnique(projects, key) {
     return Array.from(new Set(values.filter(v => v !== undefined))).sort(compareVersions);
   }
   
-  // Tratamento especial para Spring Boot - incluir valores "NENHUM" como "Nenhum"
+  // Tratamento especial para Spring Boot - incluir valores "NENHUM", null ou undefined como "Nenhum"
   if (key === 'spring_boot') {
     const values = projects.map(p => {
       const value = safeGetRequirement(p, key);
-      // Se o valor for "NENHUM", convertemos para "Nenhum" para exibição
-      if (value === 'NENHUM') {
+      // Se o valor for "NENHUM", null ou undefined, convertemos para "Nenhum" para exibição
+      if (value === 'NENHUM' || value === null || value === undefined) {
         return window.Config.FILTERS.NONE_LABEL;
       }
       return value;
     });
-    return Array.from(new Set(values.filter(v => v !== undefined && v !== null))).sort(compareVersions);
+    return Array.from(new Set(values.filter(v => v !== undefined))).sort(compareVersions);
   }
   
   // Para outros campos, apenas extraímos valores únicos não nulos e ordenamos por versão

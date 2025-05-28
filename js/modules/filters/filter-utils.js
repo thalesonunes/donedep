@@ -271,11 +271,11 @@ class FilterUtils {
       }
     };
     
-    // Tratamento especial para Kotlin - inclui valores nulos como "Nenhum"
-    if (key === 'kotlin') {
+    // Tratamento especial para Java - inclui valores "NENHUM", null ou undefined como "Nenhum"
+    if (key === 'java') {
       const values = projects.map(p => {
         const value = safeGetRequirement(p, key);
-        if (value === null || value === undefined) {
+        if (value === 'NENHUM' || value === null || value === undefined) {
           return 'Nenhum';
         }
         return value;
@@ -283,16 +283,40 @@ class FilterUtils {
       return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
     }
     
-    // Tratamento especial para Spring Boot - inclui valores "NENHUM" como "Nenhum"
-    if (key === 'spring_boot') {
+    // Tratamento especial para Kotlin - inclui valores "NENHUM", null ou undefined como "Nenhum"
+    if (key === 'kotlin') {
       const values = projects.map(p => {
         const value = safeGetRequirement(p, key);
-        if (value === 'NENHUM') {
+        if (value === 'NENHUM' || value === null || value === undefined) {
           return 'Nenhum';
         }
         return value;
       });
-      return Array.from(new Set(values.filter(v => v !== undefined && v !== null))).sort(this.compareVersions);
+      return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
+    }
+    
+    // Tratamento especial para Gradle - inclui valores "NENHUM", null ou undefined como "Nenhum"
+    if (key === 'gradle') {
+      const values = projects.map(p => {
+        const value = safeGetRequirement(p, key);
+        if (value === 'NENHUM' || value === null || value === undefined) {
+          return 'Nenhum';
+        }
+        return value;
+      });
+      return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
+    }
+    
+    // Tratamento especial para Spring Boot - inclui valores "NENHUM", null ou undefined como "Nenhum"
+    if (key === 'spring_boot') {
+      const values = projects.map(p => {
+        const value = safeGetRequirement(p, key);
+        if (value === 'NENHUM' || value === null || value === undefined) {
+          return 'Nenhum';
+        }
+        return value;
+      });
+      return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
     }
     
     // Para outros campos, extrai apenas os valores únicos não nulos e ordena pela versão

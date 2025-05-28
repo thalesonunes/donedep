@@ -201,8 +201,9 @@ class ProjectView {
      */
     static updateProjectCounters(projects) {
         try {
-            const projectCount = document.getElementById('project-count');
-            const dependencyCount = document.getElementById('dependency-count');
+            const projectCount = document.getElementById('filtered-projects-count');
+            const totalDependencyCount = document.getElementById('filtered-dependencies-total-count');
+            const uniqueDependencyCount = document.getElementById('filtered-dependencies-unique-count');
             
             // Contagem de projetos
             const validProjectCount = Array.isArray(projects) ? projects.length : 0;
@@ -211,18 +212,52 @@ class ProjectView {
                 console.log(`Contadores atualizados: ${validProjectCount} projetos`);
             }
             
-            // Contagem de dependências - verificação mais robusta
-            if (dependencyCount) {
-                let totalDeps = 0;
-                if (Array.isArray(projects)) {
-                    projects.forEach(project => {
-                        if (project && Array.isArray(project.dependencies)) {
-                            totalDeps += project.dependencies.length;
-                        }
-                    });
+            // Usar a mesma lógica de getDependencyCounts para consistência
+            if (totalDependencyCount && uniqueDependencyCount) {
+                // Se não há projetos, zerar contadores
+                if (validProjectCount === 0) {
+                    totalDependencyCount.textContent = 0;
+                    uniqueDependencyCount.textContent = 0;
+                    console.log('Contadores zerados - nenhum projeto válido');
+                    return;
                 }
-                dependencyCount.textContent = totalDeps;
-                console.log(`Contadores atualizados: ${totalDeps} dependências`);
+                
+                // Usar getDependencyCounts com filtros atuais para obter contagens consistentes
+                const activeFilters = window._activeFilters || {};
+                const searchTerm = window.searchTerm || '';
+                
+                if (window.getDependencyCounts) {
+                    const counts = window.getDependencyCounts(projects, activeFilters, searchTerm);
+                    totalDependencyCount.textContent = counts.totalCount;
+                    uniqueDependencyCount.textContent = counts.uniqueCount;
+                    console.log(`Contadores atualizados: ${counts.totalCount} dependências totais, ${counts.uniqueCount} dependências únicas`);
+                } else {
+                    // Fallback para contagem manual se getDependencyCounts não estiver disponível
+                    let totalDeps = 0;
+                    const uniqueDepsSet = new Set();
+                    
+                    if (Array.isArray(projects)) {
+                        projects.forEach(project => {
+                            if (project && Array.isArray(project.dependencies)) {
+                                // Contagem total
+                                totalDeps += project.dependencies.length;
+                                
+                                // Contagem única
+                                project.dependencies.forEach(dep => {
+                                    if (dep && dep.group && dep.name) {
+                                        const depKey = `${dep.group}:${dep.name}:${dep.version}`;
+                                        uniqueDepsSet.add(depKey);
+                                    }
+                                });
+                            }
+                        });
+                    }
+                    
+                    const uniqueDeps = uniqueDepsSet.size;
+                    totalDependencyCount.textContent = totalDeps;
+                    uniqueDependencyCount.textContent = uniqueDeps;
+                    console.log(`Contadores atualizados (fallback): ${totalDeps} dependências totais, ${uniqueDeps} dependências únicas`);
+                }
             }
         } catch (error) {
             logError({
@@ -314,9 +349,18 @@ class ProjectView {
      */
     static renderDependencies(dependencies, activeFilters) {
         const dependenciesGrid = document.getElementById('dependencies-grid');
-        document.getElementById('filtered-dependencies-count').textContent = dependencies.length;
+        
+        // Obter contagens separadas usando a nova função
+        const counts = window.getDependencyCounts(window._allProjects, activeFilters, window.searchTerm || '');
+        
+        // Atualizar contadores na interface
+        document.getElementById('filtered-dependencies-total-count').textContent = counts.totalCount;
+        document.getElementById('filtered-dependencies-unique-count').textContent = counts.uniqueCount;
 
-        if (dependencies.length === 0) {
+        // Para a visualização, mostrar dependências únicas
+        const uniqueDependencies = counts.uniqueDependencies;
+
+        if (uniqueDependencies.length === 0) {
             // Check which filters are active
             const activeFilterLabels = [];
             if (activeFilters.java) activeFilterLabels.push(`Java: ${activeFilters.java}`);
@@ -339,7 +383,7 @@ class ProjectView {
         }
 
         dependenciesGrid.innerHTML = '';
-        dependencies.forEach(dep => {
+        uniqueDependencies.forEach(dep => {
             const card = document.createElement('div');
             card.className = 'dependency-card';
             

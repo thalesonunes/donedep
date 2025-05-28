@@ -15,7 +15,7 @@ window._currentFilePath = null;
 
 let allDependencies = window._allProjects; // Referenciar o global
 // REMOVED: const activeFilters = window._activeFilters; 
-let searchTerm = '';
+window.searchTerm = '';
 
 // Initialize DOM elements
 const filtersContainer = document.getElementById('filters-container');
@@ -51,7 +51,7 @@ function setupEventListeners() {
   searchInput.addEventListener('input', (e) => {
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
-      searchTerm = e.target.value.trim();
+      window.searchTerm = e.target.value.trim();
       renderDependencies();
     }, 300); // Usar Config.UI.SEARCH_DEBOUNCE_DELAY se disponível e carregado
   });
@@ -98,10 +98,16 @@ function clearAllFilters() {
   window.FilterView.updateAllDropdowns();
   
   searchInput.value = '';
-  searchTerm = '';
+  window.searchTerm = '';
   
+  const allProjects = getFilteredProjects();
   renderDependencies();
-  updateFilteredProjects(getFilteredProjects());
+  updateFilteredProjects(allProjects);
+  
+  // Atualizar os contadores principais com todos os projetos (sem filtros)
+  if (window.ProjectView && typeof window.ProjectView.updateProjectCounters === 'function') {
+    window.ProjectView.updateProjectCounters(window._allProjects);
+  }
 }
 
 // Get filtered dependencies
@@ -113,7 +119,7 @@ function getFilteredDependencies() {
   }
   
   try {
-    return window.ProjectModel.getFilteredDependencies(allDependencies, window._activeFilters, searchTerm);
+    return window.ProjectModel.getFilteredDependencies(allDependencies, window._activeFilters, window.searchTerm);
   } catch (error) {
     console.error("Erro ao obter dependências filtradas:", error);
     return [];
@@ -131,7 +137,7 @@ function getFilteredProjects() {
   // Usar diretamente a função do projectModel sem chamadas recursivas
   // Não chamar window.getFilteredProjects aqui, pois isso causa recursão infinita
   try {
-    return window.projectModel.getFilteredProjects(searchTerm);
+    return window.projectModel.getFilteredProjects(window.searchTerm || '');
   } catch (error) {
     console.error("Erro ao obter projetos filtrados:", error);
     return [];
@@ -196,6 +202,11 @@ function updateActiveFilter(id, value) {
   
   renderDependencies();
   updateFilteredProjects(filteredProjects);
+  
+  // Atualizar os contadores principais
+  if (window.ProjectView && typeof window.ProjectView.updateProjectCounters === 'function') {
+    window.ProjectView.updateProjectCounters(filteredProjects);
+  }
 }
 
 // Initialize application
@@ -228,6 +239,11 @@ async function init() {
     
     const filteredProjects = getFilteredProjects();
     updateFilteredProjects(filteredProjects);
+    
+    // Atualizar contadores iniciais com todos os projetos
+    if (window.ProjectView && typeof window.ProjectView.updateProjectCounters === 'function') {
+      window.ProjectView.updateProjectCounters(window._allProjects);
+    }
   } catch (error) {
     window.errorHandler.handleError(error, "Error loading dependencies", 
       "Please check if the data file exists and is accessible.");

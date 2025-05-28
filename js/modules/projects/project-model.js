@@ -130,8 +130,10 @@ function getFilteredProjects(searchTerm = '') {
         for (const [filterType, filterValue] of Object.entries(activeFilters)) {
           if (filterValue) { 
             const projectRequirement = project.requirements[filterType];
-            if (filterType === 'kotlin' && filterValue === window.Config.FILTERS.NONE_LABEL) {
-              if (projectRequirement !== null && typeof projectRequirement !== 'undefined') {
+            if ((filterType === 'kotlin' || filterType === 'java' || filterType === 'spring_boot') && filterValue === window.Config.FILTERS.NONE_LABEL) {
+              if (projectRequirement !== 'NENHUM' && 
+                  projectRequirement !== null && 
+                  typeof projectRequirement !== 'undefined') {
                 return false; 
               }
             } else if (projectRequirement !== filterValue) {
@@ -244,10 +246,32 @@ class ProjectModel {
               // Log para depuração do filtro
               console.log(`Verificando filtro ${filterType}=${filterValue} para projeto ${project.project}: valor=${projectRequirement}`);
               
+              // Caso especial para java "NENHUM"
+              if (filterType === 'java' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== 'NENHUM' && 
+                    projectRequirement !== null && 
+                    typeof projectRequirement !== 'undefined') {
+                  console.log(`Projeto ${project.project} não passa no filtro NONE para java`);
+                  passesFilters = false;
+                  break;
+                }
+              } 
               // Caso especial para kotlin "NENHUM"
-              if (filterType === 'kotlin' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
-                if (projectRequirement !== null && typeof projectRequirement !== 'undefined') {
+              else if (filterType === 'kotlin' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== 'NENHUM' && 
+                    projectRequirement !== null && 
+                    typeof projectRequirement !== 'undefined') {
                   console.log(`Projeto ${project.project} não passa no filtro NONE para kotlin`);
+                  passesFilters = false;
+                  break;
+                }
+              } 
+              // Caso especial para gradle "NENHUM"
+              else if (filterType === 'gradle' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== 'NENHUM' && 
+                    projectRequirement !== null && 
+                    typeof projectRequirement !== 'undefined') {
+                  console.log(`Projeto ${project.project} não passa no filtro NONE para gradle`);
                   passesFilters = false;
                   break;
                 }
@@ -302,33 +326,15 @@ class ProjectModel {
       
       let validDeps = allDeps.filter(dep => dep && typeof dep === 'object' && dep.group && dep.name);
       
-      if (!anyFilterActive) { 
-        const depMap = {};
-        validDeps.forEach(dep => {
-          const versionString = (typeof dep.version === 'object' && dep.version !== null) ? dep.version.value : dep.version;
-          const uniqueKey = `${dep.group}:${dep.name}:${versionString}`;
-
-          if (!depMap[uniqueKey]) {
-            const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-            depMap[uniqueKey] = {...dep, id: uniqueId, projects: []};
-            if (dep.projectName && !depMap[uniqueKey].projects.includes(dep.projectName)) {
-              depMap[uniqueKey].projects.push(dep.projectName);
-            }
-          } else if (dep.projectName && !depMap[uniqueKey].projects.includes(dep.projectName)) {
-            depMap[uniqueKey].projects.push(dep.projectName);
-          }
-        });
-        validDeps = Object.values(depMap);
-      } else { 
-        validDeps = validDeps.map(dep => {
-          const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
-          const projectsList = dep.projects ? [...dep.projects] : [];
-          if (dep.projectName && !projectsList.includes(dep.projectName)) {
-            projectsList.push(dep.projectName);
-          }
-          return {...dep, id: uniqueId, projects: projectsList};
-        });
-      }
+      // Sempre retornar todas as dependências sem deduplicação para contagem total
+      validDeps = validDeps.map(dep => {
+        const uniqueId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const projectsList = dep.projects ? [...dep.projects] : [];
+        if (dep.projectName && !projectsList.includes(dep.projectName)) {
+          projectsList.push(dep.projectName);
+        }
+        return {...dep, id: uniqueId, projects: projectsList};
+      });
       
       if (searchTerm) {
         const lowerSearchTerm = searchTerm.toLowerCase();
@@ -366,17 +372,66 @@ class ProjectModel {
   }
 }
 
+/**
+ * Obtém contagens separadas de dependências totais e únicas
+ * @param {Array} projectsToProcess - Array de projetos para processar
+ * @param {Object} activeFilters - Filtros ativos
+ * @param {string} searchTerm - Termo de busca
+ * @returns {Object} - Objeto com totalCount e uniqueCount
+ */
+function getDependencyCounts(projectsToProcess, activeFilters, searchTerm) {
+  try {
+    // Obter todas as dependências (totais)
+    const totalDependencies = window.ProjectModel.getFilteredDependencies(projectsToProcess, activeFilters, searchTerm);
+    
+    // Criar versão única das dependências para contagem
+    const depMap = {};
+    totalDependencies.forEach(dep => {
+      const versionString = (typeof dep.version === 'object' && dep.version !== null) ? dep.version.value : dep.version;
+      const uniqueKey = `${dep.group}:${dep.name}:${versionString}`;
+      
+      if (!depMap[uniqueKey]) {
+        depMap[uniqueKey] = { ...dep, projects: [] };
+        if (dep.projectName && !depMap[uniqueKey].projects.includes(dep.projectName)) {
+          depMap[uniqueKey].projects.push(dep.projectName);
+        }
+      } else if (dep.projectName && !depMap[uniqueKey].projects.includes(dep.projectName)) {
+        depMap[uniqueKey].projects.push(dep.projectName);
+      }
+    });
+    
+    const uniqueDependencies = Object.values(depMap);
+    
+    return {
+      totalCount: totalDependencies.length,
+      uniqueCount: uniqueDependencies.length,
+      totalDependencies: totalDependencies,
+      uniqueDependencies: uniqueDependencies
+    };
+  } catch (error) {
+    console.error("Erro ao obter contagens de dependências:", error);
+    return {
+      totalCount: 0,
+      uniqueCount: 0,
+      totalDependencies: [],
+      uniqueDependencies: []
+    };
+  }
+}
+
 window.ProjectModel = ProjectModel;
 window.initializeProjectModel = initializeProjectModel;
 window.getAllProjects = getAllProjects;
 window.getProjectByName = getProjectByName;
 window.getFilteredProjects = getFilteredProjects;
 window.getProjectsStats = getProjectsStats;
+window.getDependencyCounts = getDependencyCounts;
 
 window.projectModel = {
   initializeProjectModel,
   getAllProjects,
   getProjectByName,
   getFilteredProjects,
-  getProjectsStats
+  getProjectsStats,
+  getDependencyCounts
 };

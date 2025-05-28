@@ -77,13 +77,30 @@ function validateFilterCombination() {
     for (const [key, value] of Object.entries(window._activeFilters)) {
       if (value === null) continue;
       
-      if (key === 'kotlin' && value === window.Config.FILTERS.NONE_LABEL) {
-        if (project.requirements[key] !== null && project.requirements[key] !== undefined) {
+      if (key === 'java' && value === window.Config.FILTERS.NONE_LABEL) {
+        if (project.requirements[key] !== 'NENHUM' && 
+            project.requirements[key] !== null && 
+            project.requirements[key] !== undefined) {
+          return false;
+        }
+      } else if (key === 'kotlin' && value === window.Config.FILTERS.NONE_LABEL) {
+        if (project.requirements[key] !== 'NENHUM' && 
+            project.requirements[key] !== null && 
+            project.requirements[key] !== undefined) {
+          return false;
+        }
+      } else if (key === 'gradle' && value === window.Config.FILTERS.NONE_LABEL) {
+        if (project.requirements[key] !== 'NENHUM' && 
+            project.requirements[key] !== null && 
+            project.requirements[key] !== undefined) {
           return false;
         }
       } else if (key === 'spring_boot' && value === window.Config.FILTERS.NONE_LABEL) {
-        // Para Spring Boot "Nenhum", verificar apenas projetos que têm explicitamente "NENHUM"
-        if (!project.requirements || project.requirements[key] !== 'NENHUM') {
+        // Para Spring Boot "Nenhum", projetos com valor "NENHUM", null ou undefined passam no filtro
+        if (project.requirements && 
+            project.requirements[key] !== 'NENHUM' && 
+            project.requirements[key] !== null && 
+            project.requirements[key] !== undefined) {
           return false;
         }
       } else if (value !== null && project.requirements[key] !== value) {
@@ -133,9 +150,17 @@ function getCompatibleOptions(filterToUpdate, currentSelections = window._active
       if (value && key !== filterToUpdate) {
         console.log(`Aplicando filtro ${key}=${value} para obter opções de ${filterToUpdate}`);
         
-        if (key === 'kotlin' && value === window.Config.FILTERS.NONE_LABEL) {
+        if (key === 'java' && value === window.Config.FILTERS.NONE_LABEL) {
           filteredProjects = filteredProjects.filter(p => 
-            p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'kotlin' && value === window.Config.FILTERS.NONE_LABEL) {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'gradle' && value === window.Config.FILTERS.NONE_LABEL) {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
           );
         } else if (key === 'spring_boot' && value === window.Config.FILTERS.NONE_LABEL) {
           filteredProjects = filteredProjects.filter(p => 
@@ -337,9 +362,17 @@ class FilterModel {
     
     Object.entries(currentSelections).forEach(([key, value]) => {
       if (value && key !== filterToUpdate) {
-        if (key === 'kotlin' && value === 'Nenhum') {
+        if (key === 'java' && value === 'Nenhum') {
           filteredProjects = filteredProjects.filter(p => 
-            p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'kotlin' && value === 'Nenhum') {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'gradle' && value === 'Nenhum') {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
           );
         } else if (key === 'spring_boot' && value === 'Nenhum') {
           filteredProjects = filteredProjects.filter(p => 
@@ -363,13 +396,33 @@ class FilterModel {
       
       for (const [filterType, filterValue] of Object.entries(activeFiltersData)) {
         if (filterValue) {
-          if (filterType === 'kotlin' && filterValue === 'Nenhum') {
-            if (project.requirements && project.requirements[filterType] !== null && project.requirements[filterType] !== undefined) {
+          if (filterType === 'java' && filterValue === 'Nenhum') {
+            if (project.requirements && 
+                project.requirements[filterType] !== 'NENHUM' && 
+                project.requirements[filterType] !== null && 
+                project.requirements[filterType] !== undefined) {
+              return false;
+            }
+          } else if (filterType === 'kotlin' && filterValue === 'Nenhum') {
+            if (project.requirements && 
+                project.requirements[filterType] !== 'NENHUM' && 
+                project.requirements[filterType] !== null && 
+                project.requirements[filterType] !== undefined) {
+              return false;
+            }
+          } else if (filterType === 'gradle' && filterValue === 'Nenhum') {
+            if (project.requirements && 
+                project.requirements[filterType] !== 'NENHUM' && 
+                project.requirements[filterType] !== null && 
+                project.requirements[filterType] !== undefined) {
               return false;
             }
           } else if (filterType === 'spring_boot' && filterValue === 'Nenhum') {
-            // Para Spring Boot "Nenhum", filtrar apenas projetos que têm explicitamente "NENHUM"
-            if (!project.requirements || project.requirements[filterType] !== 'NENHUM') {
+            // Para Spring Boot "Nenhum", projetos com valor "NENHUM", null ou undefined passam no filtro
+            if (project.requirements && 
+                project.requirements[filterType] !== 'NENHUM' && 
+                project.requirements[filterType] !== null && 
+                project.requirements[filterType] !== undefined) {
               return false;
             }
           } else if (!project.requirements || project.requirements[filterType] !== filterValue) {

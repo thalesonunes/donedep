@@ -15,9 +15,8 @@ function updateFilteredProjectsList(filteredData = []) {
     
     const filteredProjectsList = document.getElementById('filtered-projects-list');
     const filteredProjectsCount = document.getElementById('filtered-projects-count');
-    const filteredDependenciesCount = document.getElementById('filtered-dependencies-count');
     
-    if (!filteredProjectsList || !filteredProjectsCount || !filteredDependenciesCount) {
+    if (!filteredProjectsList || !filteredProjectsCount) {
       throw new Error('Elementos de UI para projetos filtrados não encontrados');
     }
     
@@ -69,7 +68,7 @@ function updateFilteredProjectsList(filteredData = []) {
     });
     
     console.log(`Total de dependências únicas por projeto: ${totalDependencies}`);
-    filteredDependenciesCount.textContent = totalDependencies;
+    // Note: O contador de dependências é atualizado pelos contadores principais da aplicação
     
     // Adicionar chips para cada projeto
     uniqueProjects.forEach(project => {
@@ -137,13 +136,19 @@ function updateFilteredProjectsList(filteredData = []) {
       filteredProjectsList.appendChild(chip);
     });
   } catch (error) {
-    logError({
-      message: `Erro ao atualizar lista de projetos: ${error.message}`,
-      type: ErrorType.RENDER,
-      level: ErrorLevel.ERROR,
-      originalError: error,
-      context: { projectsCount: filteredData.length }
-    });
+    // Usar o error handler global se disponível
+    if (window.errorHandler && typeof window.errorHandler.logError === 'function') {
+      window.errorHandler.logError({
+        message: `Erro ao atualizar lista de projetos: ${error.message}`,
+        type: window.ErrorType.RENDER,
+        level: window.ErrorLevel.ERROR,
+        originalError: error,
+        context: { projectsCount: filteredData.length }
+      });
+    } else {
+      // Fallback para console.error se errorHandler não estiver disponível
+      console.error('Erro ao atualizar lista de projetos:', error);
+    }
   }
 }
 
