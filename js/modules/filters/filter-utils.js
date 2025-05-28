@@ -35,7 +35,8 @@ function validateFilterValue(filterType, value) {
                 return /^\d+\.\d+(\.\d+)?$/.test(value);
                 
             case 'spring_boot':
-                // Aceitar versão semântica
+                // Aceitar "Nenhum" ou versão semântica
+                if (value === CONFIG.FILTERS.NONE_LABEL) return true;
                 return /^\d+\.\d+\.\d+$/.test(value);
                 
             default:
@@ -74,6 +75,9 @@ function normalizeFilterValue(filterType, value) {
                 return normalizeJavaVersion(value).toString();
                 
             case 'kotlin':
+                return value === 'null' ? CONFIG.FILTERS.NONE_LABEL : value;
+                
+            case 'spring_boot':
                 return value === 'null' ? CONFIG.FILTERS.NONE_LABEL : value;
                 
             default:
@@ -277,6 +281,18 @@ class FilterUtils {
         return value;
       });
       return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
+    }
+    
+    // Tratamento especial para Spring Boot - inclui valores "NENHUM" como "Nenhum"
+    if (key === 'spring_boot') {
+      const values = projects.map(p => {
+        const value = safeGetRequirement(p, key);
+        if (value === 'NENHUM') {
+          return 'Nenhum';
+        }
+        return value;
+      });
+      return Array.from(new Set(values.filter(v => v !== undefined && v !== null))).sort(this.compareVersions);
     }
     
     // Para outros campos, extrai apenas os valores únicos não nulos e ordena pela versão

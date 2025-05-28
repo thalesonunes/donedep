@@ -81,8 +81,12 @@ function validateFilterCombination() {
         if (project.requirements[key] !== null && project.requirements[key] !== undefined) {
           return false;
         }
-      } 
-      else if (value !== null && project.requirements[key] !== value) {
+      } else if (key === 'spring_boot' && value === window.Config.FILTERS.NONE_LABEL) {
+        // Para Spring Boot "Nenhum", verificar apenas projetos que têm explicitamente "NENHUM"
+        if (!project.requirements || project.requirements[key] !== 'NENHUM') {
+          return false;
+        }
+      } else if (value !== null && project.requirements[key] !== value) {
         return false;
       }
     }
@@ -132,6 +136,10 @@ function getCompatibleOptions(filterToUpdate, currentSelections = window._active
         if (key === 'kotlin' && value === window.Config.FILTERS.NONE_LABEL) {
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'spring_boot' && value === window.Config.FILTERS.NONE_LABEL) {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined || p.requirements[key] === "NENHUM")
           );
         } else {
           filteredProjects = filteredProjects.filter(p => 
@@ -333,6 +341,10 @@ class FilterModel {
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined)
           );
+        } else if (key === 'spring_boot' && value === 'Nenhum') {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined || p.requirements[key] === "NENHUM")
+          );
         } else {
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && p.requirements[key] === value
@@ -353,6 +365,11 @@ class FilterModel {
         if (filterValue) {
           if (filterType === 'kotlin' && filterValue === 'Nenhum') {
             if (project.requirements && project.requirements[filterType] !== null && project.requirements[filterType] !== undefined) {
+              return false;
+            }
+          } else if (filterType === 'spring_boot' && filterValue === 'Nenhum') {
+            // Para Spring Boot "Nenhum", filtrar apenas projetos que têm explicitamente "NENHUM"
+            if (!project.requirements || project.requirements[filterType] !== 'NENHUM') {
               return false;
             }
           } else if (!project.requirements || project.requirements[filterType] !== filterValue) {

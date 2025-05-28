@@ -252,6 +252,14 @@ class ProjectModel {
                   break;
                 }
               } 
+              // Caso especial para spring_boot "NENHUM"
+              else if (filterType === 'spring_boot' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== null && typeof projectRequirement !== 'undefined' && projectRequirement !== "NENHUM") {
+                  console.log(`Projeto ${project.project} não passa no filtro NONE para spring_boot`);
+                  passesFilters = false;
+                  break;
+                }
+              } 
               // Verificação normal de igualdade
               else if (projectRequirement !== filterValue) {
                 console.log(`Projeto ${project.project} não passa no filtro ${filterType}=${filterValue}`);
