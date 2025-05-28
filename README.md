@@ -4,7 +4,7 @@
 
 # DoneDep - Gerenciador de Dependências de Microsserviços
 
-DoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle e Maven. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
+DoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
 
 ## Filosofia do Projeto
 
@@ -95,9 +95,10 @@ O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 
 **Extração de Dados**
 - Detecção automática de versões do Java, Kotlin, Gradle e Spring Boot
-- Suporte a sistemas de build Gradle (Groovy e Kotlin DSL) e Maven
-- Identificação e processamento de variáveis em arquivos de build
+- Suporte completo a sistemas de build Gradle (Groovy e Kotlin DSL)
+- Identificação e processamento avançado de variáveis em arquivos de build
 - Análise paralela de múltiplos repositórios e projetos
+- Suporte a múltiplos tipos de configuração de dependências (implementation, testImplementation, compile, testCompile, runtimeOnly, compileOnly, annotationProcessor, api)
 
 **Visualização e Filtragem**
 - Sistema de filtros bidirecionais com atualização dinâmica
@@ -105,14 +106,18 @@ O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 - Exibição de todos os projetos que utilizam cada dependência
 - Visualização organizada por categorias tecnológicas
 - Interface totalmente em português
+- Exibição das configurações de dependência (implementation, testImplementation, etc.) com destaque visual
+- Filtragem inteligente que lida com valores especiais como "NENHUM", null e undefined
 
 **Utilitários**
 - Cópia com um clique de dependências em formatos Gradle e Maven
 - Ordenação inteligente de diferentes formatos de versão
-- Destaque visual para variáveis não resolvidas
+- Destaque visual para variáveis não resolvidas (marcadas com ⚡)
 - Sistema de notificações e modais para feedback de ações
 - Design responsivo com animações consistentes para melhor UX
 - Histórico de dependências com arquivos timestamp para análise de mudanças ao longo do tempo
+- Contagem aprimorada de dependências incluindo configuração na chave única
+- Script de limpeza (DoneDep Cleaner) para remoção de arquivos de dependências extraídas
 
 ## Desenvolvimento com IA
 
@@ -224,10 +229,14 @@ O DoneDep utiliza uma arquitetura modular baseada em scripts Bash:
 3. **Extração de Versões** (`version_extractor.sh`)
    - Identificação de versões Java, Kotlin, Gradle e Spring Boot
    - Normalização de formatos de versão
+   - Suporte a padrões adicionais para detecção robusta de versões
+   - Melhoria na extração de versões Java em arquivos Kotlin DSL
 
 4. **Parsing de Dependências** (`dependency_parser.sh`)
-   - Suporte para formatos Gradle (Groovy e Kotlin DSL) e Maven
-   - Extração de grupo, artefato, versão e configuração
+   - Suporte completo para formatos Gradle (Groovy e Kotlin DSL)
+   - Extração avançada de grupo, artefato, versão e configuração
+   - Resolução inteligente de variáveis e propriedades
+   - Suporte a padrões complexos como property(), ${}, Version Catalogs
 
 5. **Manipulação JSON** (`json_handler.sh`)
    - Formatação dos dados extraídos para JSON
@@ -287,16 +296,27 @@ dependencies {
 }
 ```
 
-### Maven
-```xml
-<dependencies>
-    <dependency>
-        <groupId>group</groupId>
-        <artifactId>artifact</artifactId>
-        <version>version</version>
-    </dependency>
-</dependencies>
-```
+## Suporte ao Maven
+
+O DoneDep **não possui suporte ao Maven** no momento, focando exclusivamente em projetos Gradle. O suporte ao Maven está sendo desenvolvido e será incluído em versões futuras.
+
+### Status Atual
+- ❌ Sem suporte para arquivos `pom.xml`
+- ❌ Sem extração de dependências Maven
+- ❌ Sem resolução de propriedades Maven
+- ✅ Foco total em projetos Gradle (Groovy e Kotlin DSL)
+
+### Desenvolvimento Futuro
+O suporte ao Maven está sendo planejado e incluirá:
+- Extração de dependências de arquivos `pom.xml`
+- Resolução de propriedades Maven (`${property.name}`)
+- Detecção de versões do Spring Boot em projetos Maven
+- Mapeamento de scopes Maven para configurações equivalentes
+- Suporte a profiles Maven
+- Análise de dependências transitivas
+- Suporte a BOM (Bill of Materials)
+
+Para acompanhar o progresso do desenvolvimento do suporte ao Maven, consulte as issues do projeto no GitHub.
 
 ## Formato de Saída JSON
 
@@ -340,6 +360,7 @@ Para contribuir com o DoneDep, siga estas etapas:
 
 ### Áreas para Contribuição
 
+- Implementação de suporte ao Maven (em desenvolvimento)
 - Suporte a mais sistemas de build (Ant, SBT, etc.)
 - Melhorias na visualização e filtragem
 - Otimizações na extração de dependências
@@ -353,7 +374,8 @@ Para contribuir com o DoneDep, siga estas etapas:
 
 1. **Erro ao extrair dependências**
    - Verifique se os repositórios em `repos.txt` estão acessíveis
-   - Confira se os projetos usam estruturas Gradle ou Maven compatíveis
+   - Confira se os projetos usam estruturas Gradle compatíveis
+   - Certifique-se de que os projetos não sejam exclusivamente Maven (ainda não suportado)
 
 2. **Interface não carrega dependências**
    - Verifique se o arquivo `data/dependencies.json` foi gerado corretamente
@@ -366,6 +388,35 @@ Para contribuir com o DoneDep, siga estas etapas:
 
 O sistema mantém logs detalhados em `data/donedep.log` que podem ajudar a identificar problemas durante a extração.
 
+## Ferramentas Auxiliares
+
+### DoneDep Cleaner
+
+O projeto inclui um script de limpeza (`cleaner.sh`) que permite remover arquivos de dependências extraídas e dados relacionados:
+
+```bash
+# Executar o script de limpeza
+./cleaner.sh
+```
+
+Este script remove:
+- Arquivos de dependências com timestamp (`dependencies_*.json`)
+- Arquivo de listagem de dependências (`dependency-files-list.json`)
+- Logs do sistema (`donedep.log`)
+- Mantém o symlink `dependencies.json` apontando para um arquivo vazio
+
+### Histórico de Versões
+
+O sistema mantém automaticamente um histórico de extrações com timestamps, permitindo:
+- Análise da evolução das dependências ao longo do tempo
+- Comparação entre diferentes momentos de extração
+- Seleção de versões específicas na interface web
+
+Para listar todas as versões disponíveis:
+```bash
+ls -la data/dependencies*.json
+```
+
 ## Lições Aprendidas
 
 - Código simples é mais fácil de depurar e manter
@@ -377,6 +428,10 @@ O sistema mantém logs detalhados em `data/donedep.log` que podem ajudar a ident
 - Pair programming com IA requer supervisão ativa e correções frequentes
 - O histórico de commits é um reflexo valioso do processo de desenvolvimento
 - A qualidade do output da IA varia significativamente entre diferentes modelos e prompts
+- A importância da identificação única de dependências incluindo configuração para contagens precisas
+- Filtragem robusta deve considerar casos especiais como valores "NENHUM", null e undefined
+- A visualização hierárquica (configuração abaixo do nome) melhora significativamente a experiência do usuário
+- Melhorias incrementais baseadas em feedback real de uso são mais eficazes que grandes refatorações
 
 ## Aspectos Experimentais
 
@@ -385,11 +440,20 @@ Este projeto incorpora aspectos experimentais importantes:
 **Uso de Shell Script como Backend**
 - Exploração das capacidades do shell para parsing e análise de código
 - Implementação de um sistema modular baseado em shell scripts
+- Resolução complexa de variáveis e propriedades em diferentes formatos de build
 
 **Desenvolvimento Assistido por IA**
 - Integração de IA no fluxo de trabalho de desenvolvimento
 - Experimentação com diferentes abordagens de prompting
 - Avaliação da qualidade do código gerado com assistência de IA
+- Iterações baseadas em análise de dados reais e feedback de uso
+
+**Melhorias Recentes (Maio 2025)**
+- Aprimoramento na exibição hierárquica de configurações de dependência
+- Melhoria na lógica de filtragem para casos especiais
+- Otimização na extração de versões Java para arquivos Kotlin DSL
+- Implementação de contagem única baseada em configuração + dependência
+- Adição do sistema de limpeza automática de arquivos extraídos
 
 ---
 
