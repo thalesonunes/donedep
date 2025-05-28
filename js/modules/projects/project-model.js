@@ -388,7 +388,7 @@ function getDependencyCounts(projectsToProcess, activeFilters, searchTerm) {
     const depMap = {};
     totalDependencies.forEach(dep => {
       const versionString = (typeof dep.version === 'object' && dep.version !== null) ? dep.version.value : dep.version;
-      const uniqueKey = `${dep.group}:${dep.name}:${versionString}`;
+      const uniqueKey = `${dep.group}:${dep.name}:${versionString}:${dep.configuration}`;
       
       if (!depMap[uniqueKey]) {
         depMap[uniqueKey] = { ...dep, projects: [] };
