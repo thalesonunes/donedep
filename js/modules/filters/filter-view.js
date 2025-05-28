@@ -130,6 +130,7 @@ class FilterView {
         // Resetar todos os dropdowns para estado vazio
         this.fillDropdown('filter-java', [], null);
         this.fillDropdown('filter-gradle', [], null);
+        this.fillDropdown('filter-maven', [], null);
         this.fillDropdown('filter-kotlin', [], null);
         this.fillDropdown('filter-spring', [], null);
         return;
@@ -139,12 +140,14 @@ class FilterView {
       console.log("Obtendo opções compatíveis com", window._allProjects.length, "projetos disponíveis");
       const javaCompatibleOptions = window.getCompatibleOptions('java', selected);
       const gradleCompatibleOptions = window.getCompatibleOptions('gradle', selected);
+      const mavenCompatibleOptions = window.getCompatibleOptions('maven', selected);
       const kotlinCompatibleOptions = window.getCompatibleOptions('kotlin', selected);
       const springBootCompatibleOptions = window.getCompatibleOptions('spring_boot', selected);
       
       // Preencher os dropdowns com as opções compatíveis
       this.fillDropdown('filter-java', javaCompatibleOptions, selected.java);
       this.fillDropdown('filter-gradle', gradleCompatibleOptions, selected.gradle);
+      this.fillDropdown('filter-maven', mavenCompatibleOptions, selected.maven);
       this.fillDropdown('filter-kotlin', kotlinCompatibleOptions, selected.kotlin);
       this.fillDropdown('filter-spring', springBootCompatibleOptions, selected.spring_boot);
 
@@ -195,12 +198,13 @@ class FilterView {
         java: null,
         kotlin: null,
         gradle: null,
+        maven: null,
         spring_boot: null
       };
     }
     
     // Resetar UI
-    ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+    ['java', 'kotlin', 'gradle', 'maven', 'spring'].forEach(type => {
       const dropdown = document.getElementById('filter-' + type);
       if (dropdown) {
         dropdown.value = '';
@@ -223,7 +227,7 @@ class FilterView {
       clearFiltersButton.addEventListener('click', () => this.clearAllFilters()); // Ensure 'this' context
     }
 
-    ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+    ['java', 'kotlin', 'gradle', 'maven', 'spring'].forEach(type => {
       const dropdown = document.getElementById('filter-' + type);
       if (dropdown) {
         dropdown.addEventListener('change', (e) => {

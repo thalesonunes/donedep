@@ -34,6 +34,11 @@ function validateFilterValue(filterType, value) {
                 // Aceitar versão semântica
                 return /^\d+\.\d+(\.\d+)?$/.test(value);
                 
+            case 'maven':
+                // Aceitar "Nenhum" ou versão semântica
+                if (value === CONFIG.FILTERS.NONE_LABEL) return true;
+                return /^\d+\.\d+(\.\d+)?$/.test(value);
+                
             case 'spring_boot':
                 // Aceitar "Nenhum" ou versão semântica
                 if (value === CONFIG.FILTERS.NONE_LABEL) return true;
@@ -297,6 +302,18 @@ class FilterUtils {
     
     // Tratamento especial para Gradle - inclui valores "NENHUM", null ou undefined como "Nenhum"
     if (key === 'gradle') {
+      const values = projects.map(p => {
+        const value = safeGetRequirement(p, key);
+        if (value === 'NENHUM' || value === null || value === undefined) {
+          return 'Nenhum';
+        }
+        return value;
+      });
+      return Array.from(new Set(values.filter(v => v !== undefined))).sort(this.compareVersions);
+    }
+    
+    // Tratamento especial para Maven - inclui valores "NENHUM", null ou undefined como "Nenhum"
+    if (key === 'maven') {
       const values = projects.map(p => {
         const value = safeGetRequirement(p, key);
         if (value === 'NENHUM' || value === null || value === undefined) {

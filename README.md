@@ -4,7 +4,7 @@
 
 # DoneDep - Gerenciador de Dependências de Microsserviços
 
-DoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Spring Boot).
+DoneDep é uma ferramenta simples e direta para visualizar e gerenciar dependências de projetos Java/Kotlin com Gradle e Maven. Projetada para ambientes com múltiplos microsserviços, ela permite identificar facilmente quais dependências são usadas em diferentes projetos e com quais combinações de tecnologias (Java, Kotlin, Gradle, Maven, Spring Boot).
 
 ## Filosofia do Projeto
 
@@ -94,11 +94,12 @@ Durante o desenvolvimento, priorizamos a clareza e a manutenibilidade do código
 O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenciamento de dependências:
 
 **Extração de Dados**
-- Detecção automática de versões do Java, Kotlin, Gradle e Spring Boot
-- Suporte completo a sistemas de build Gradle (Groovy e Kotlin DSL)
-- Identificação e processamento avançado de variáveis em arquivos de build
+- Detecção automática de versões do Java, Kotlin, Gradle, Maven e Spring Boot
+- Suporte completo a sistemas de build Gradle (Groovy e Kotlin DSL) e Maven
+- Identificação e processamento avançado de variáveis em arquivos de build (Gradle e Maven)
 - Análise paralela de múltiplos repositórios e projetos
 - Suporte a múltiplos tipos de configuração de dependências (implementation, testImplementation, compile, testCompile, runtimeOnly, compileOnly, annotationProcessor, api)
+- Resolução de propriedades Maven e mapeamento automático de scopes
 
 **Visualização e Filtragem**
 - Sistema de filtros bidirecionais com atualização dinâmica
@@ -118,18 +119,6 @@ O DoneDep oferece um conjunto focado de funcionalidades para facilitar o gerenci
 - Histórico de dependências com arquivos timestamp para análise de mudanças ao longo do tempo
 - Contagem aprimorada de dependências incluindo configuração na chave única
 - Script de limpeza (DoneDep Cleaner) para remoção de arquivos de dependências extraídas
-
-## Desenvolvimento com IA
-
-O DoneDep foi desenvolvido utilizando pair programming com assistência de IA, explorando:
-
-- Integração de criatividade humana com sugestões de código por IA
-- Resolução de problemas técnicos com assistência inteligente
-- Refinamento e documentação colaborativos
-
-O processo revelou tanto benefícios quanto desafios desta abordagem. A combinação da direção humana com sugestões de IA permitiu um desenvolvimento eficiente, apesar das limitações dos modelos atuais. A supervisão humana mostrou-se essencial para manter a qualidade do código e a coerência da implementação.
-
-
 
 ## Como Usar
 
@@ -227,16 +216,17 @@ O DoneDep utiliza uma arquitetura modular baseada em scripts Bash:
    - Identificação de arquivos de build relevantes
 
 3. **Extração de Versões** (`version_extractor.sh`)
-   - Identificação de versões Java, Kotlin, Gradle e Spring Boot
+   - Identificação de versões Java, Kotlin, Gradle, Maven e Spring Boot
    - Normalização de formatos de versão
    - Suporte a padrões adicionais para detecção robusta de versões
    - Melhoria na extração de versões Java em arquivos Kotlin DSL
 
 4. **Parsing de Dependências** (`dependency_parser.sh`)
-   - Suporte completo para formatos Gradle (Groovy e Kotlin DSL)
+   - Suporte completo para formatos Gradle (Groovy e Kotlin DSL) e Maven
    - Extração avançada de grupo, artefato, versão e configuração
-   - Resolução inteligente de variáveis e propriedades
+   - Resolução inteligente de variáveis e propriedades (Gradle e Maven)
    - Suporte a padrões complexos como property(), ${}, Version Catalogs
+   - Mapeamento automático de scopes Maven para configurações equivalentes
 
 5. **Manipulação JSON** (`json_handler.sh`)
    - Formatação dos dados extraídos para JSON
@@ -296,27 +286,60 @@ dependencies {
 }
 ```
 
-## Suporte ao Maven
+### Maven
+```xml
+<dependencies>
+    <dependency>
+        <groupId>group</groupId>
+        <artifactId>artifact</artifactId>
+        <version>version</version>
+        <scope>compile</scope>
+    </dependency>
+</dependencies>
+```
 
-O DoneDep **não possui suporte ao Maven** no momento, focando exclusivamente em projetos Gradle. O suporte ao Maven está sendo desenvolvido e será incluído em versões futuras.
+## Sistemas de Build Suportados
 
-### Status Atual
-- ❌ Sem suporte para arquivos `pom.xml`
-- ❌ Sem extração de dependências Maven
-- ❌ Sem resolução de propriedades Maven
-- ✅ Foco total em projetos Gradle (Groovy e Kotlin DSL)
+O DoneDep oferece **suporte completo** para os principais sistemas de build do ecossistema Java/Kotlin, tratando cada um com funcionalidades equivalentes.
 
-### Desenvolvimento Futuro
-O suporte ao Maven está sendo planejado e incluirá:
-- Extração de dependências de arquivos `pom.xml`
-- Resolução de propriedades Maven (`${property.name}`)
-- Detecção de versões do Spring Boot em projetos Maven
-- Mapeamento de scopes Maven para configurações equivalentes
-- Suporte a profiles Maven
-- Análise de dependências transitivas
-- Suporte a BOM (Bill of Materials)
+### Suporte ao Gradle
 
-Para acompanhar o progresso do desenvolvimento do suporte ao Maven, consulte as issues do projeto no GitHub.
+#### Funcionalidades Gradle Implementadas
+- ✅ Extração de dependências de arquivos `build.gradle` e `build.gradle.kts`
+- ✅ Suporte completo a Groovy DSL e Kotlin DSL
+- ✅ Resolução de variáveis e propriedades (`${variable}`, `property()`)
+- ✅ Suporte a Version Catalogs (libs.versions.toml)
+- ✅ Detecção de versões do Gradle wrapper
+- ✅ Análise de configurações (implementation, api, compileOnly, etc.)
+- ✅ Suporte a projetos multi-módulo Gradle
+
+#### Configurações Gradle Suportadas
+- `implementation`, `api`, `compileOnly`, `runtimeOnly`
+- `testImplementation`, `testCompileOnly`, `testRuntimeOnly`
+- `annotationProcessor`, `kapt`
+
+### Suporte ao Maven
+
+#### Funcionalidades Maven Implementadas
+- ✅ Extração de dependências de arquivos `pom.xml`
+- ✅ Resolução de propriedades Maven (`${property.name}`)
+- ✅ Detecção de versões do Spring Boot em projetos Maven
+- ✅ Suporte a projetos multi-módulo Maven
+- ✅ Detecção automática da versão Maven
+- ✅ Análise de scopes Maven
+
+#### Mapeamento de Scopes Maven
+O DoneDep mapeia automaticamente os scopes Maven para configurações equivalentes:
+- `compile` → `implementation`
+- `test` → `testImplementation`
+- `provided` → `compileOnly`
+- `runtime` → `runtimeOnly`
+- `import` → `platform`
+
+### Detecção Automática
+- ✅ **Detecção automática** do sistema de build por projeto
+- ✅ **Suporte simultâneo** para repositórios com projetos Gradle e Maven
+- ✅ **Filtros específicos** para cada sistema de build na interface web
 
 ## Formato de Saída JSON
 
@@ -326,17 +349,22 @@ O DoneDep gera um arquivo JSON com a seguinte estrutura:
 [
   {
     "project": "nome-do-projeto",
-    "path": "/caminho/para/o/projeto",
     "javaVersion": "17",
-    "kotlinVersion": "1.8.0",
-    "gradleVersion": "8.0.1",
+    "kotlinVersion": "1.9.10",
+    "gradleVersion": "8.4-bin",
+    "mavenVersion": "3.8.1",
     "springBootVersion": "3.0.4",
-    "modules": ["módulo1", "módulo2"],
     "dependencies": [
       {
         "group": "org.springframework.boot",
         "name": "spring-boot-starter-web",
         "version": "3.0.4",
+        "configuration": "implementation"
+      },
+      {
+        "group": "com.fasterxml.jackson.module",
+        "name": "jackson-module-kotlin",
+        "version": "managed",
         "configuration": "implementation"
       }
     ]
@@ -360,7 +388,6 @@ Para contribuir com o DoneDep, siga estas etapas:
 
 ### Áreas para Contribuição
 
-- Implementação de suporte ao Maven (em desenvolvimento)
 - Suporte a mais sistemas de build (Ant, SBT, etc.)
 - Melhorias na visualização e filtragem
 - Otimizações na extração de dependências
@@ -374,8 +401,8 @@ Para contribuir com o DoneDep, siga estas etapas:
 
 1. **Erro ao extrair dependências**
    - Verifique se os repositórios em `repos.txt` estão acessíveis
-   - Confira se os projetos usam estruturas Gradle compatíveis
-   - Certifique-se de que os projetos não sejam exclusivamente Maven (ainda não suportado)
+   - Confira se os projetos usam estruturas Gradle ou Maven compatíveis
+   - Certifique-se de que os arquivos de build (build.gradle, build.gradle.kts, pom.xml) estão presentes
 
 2. **Interface não carrega dependências**
    - Verifique se o arquivo `data/dependencies.json` foi gerado corretamente
@@ -435,25 +462,31 @@ ls -la data/dependencies*.json
 
 ## Aspectos Experimentais
 
-Este projeto incorpora aspectos experimentais importantes:
+Este projeto incorpora aspectos experimentais importantes que exploram novas abordagens de desenvolvimento:
 
 **Uso de Shell Script como Backend**
 - Exploração das capacidades do shell para parsing e análise de código
 - Implementação de um sistema modular baseado em shell scripts
 - Resolução complexa de variáveis e propriedades em diferentes formatos de build
 
-**Desenvolvimento Assistido por IA**
+**Desenvolvimento Assistido por IA (Pair Programming)**
 - Integração de IA no fluxo de trabalho de desenvolvimento
 - Experimentação com diferentes abordagens de prompting
 - Avaliação da qualidade do código gerado com assistência de IA
 - Iterações baseadas em análise de dados reais e feedback de uso
+- Combinação da direção humana com sugestões de IA para desenvolvimento eficiente
+- Supervisão humana essencial para manter qualidade e coerência da implementação
+
+O processo de desenvolvimento com IA revelou tanto benefícios quanto desafios desta abordagem, demonstrando que a integração de criatividade humana com sugestões de código por IA pode ser eficaz quando adequadamente supervisionada.
 
 **Melhorias Recentes (Maio 2025)**
+- Implementação completa do suporte ao Maven equivalente ao Gradle
 - Aprimoramento na exibição hierárquica de configurações de dependência
 - Melhoria na lógica de filtragem para casos especiais
 - Otimização na extração de versões Java para arquivos Kotlin DSL
 - Implementação de contagem única baseada em configuração + dependência
 - Adição do sistema de limpeza automática de arquivos extraídos
+- Suporte unificado para projetos Gradle e Maven com detecção automática
 
 ---
 

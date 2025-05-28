@@ -690,14 +690,31 @@ parse_maven_dependencies() {
   local project_dir="$2"
   local project_context="$3"
   local in_dependencies=0
+  local in_dependency_management=0
   local current_group=""
   local current_artifact=""
   local current_version=""
   local current_scope="compile"
+  local current_type=""
+  local current_classifier=""
+  
+  debug_log "Iniciando análise Maven do arquivo: $pom_file"
   
   # Ler XML linha por linha com um método simples baseado em marcadores
   while IFS= read -r line; do
-    # Verificar início da seção de dependências
+    # Limpar espaços em branco desnecessários
+    line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    # Verificar início/fim da seção de dependencyManagement
+    if [[ "$line" =~ \<dependencyManagement\> ]]; then
+      in_dependency_management=1
+      continue
+    elif [[ "$line" =~ \</dependencyManagement\> ]]; then
+      in_dependency_management=0
+      continue
+    fi
+    
+    # Verificar início/fim da seção de dependencies
     if [[ "$line" =~ \<dependencies\> ]]; then
       in_dependencies=1
       continue
@@ -706,40 +723,66 @@ parse_maven_dependencies() {
       continue
     fi
     
-    # Processar apenas se estiver dentro da seção de dependências
-    if [ $in_dependencies -eq 1 ]; then
+    # Processar apenas se estiver dentro da seção de dependências (não dependencyManagement)
+    if [ $in_dependencies -eq 1 ] && [ $in_dependency_management -eq 0 ]; then
       # Detectar início de uma nova dependência
       if [[ "$line" =~ \<dependency\> ]]; then
         current_group=""
         current_artifact=""
         current_version=""
         current_scope="compile"
+        current_type=""
+        current_classifier=""
         continue
       # Extrair informações da dependência
       elif [[ "$line" =~ \<groupId\>(.*)\</groupId\> ]]; then
         current_group="${BASH_REMATCH[1]}"
+        # Remover espaços e resolver variáveis básicas
+        current_group=$(echo "$current_group" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        debug_log "Maven: groupId = $current_group"
       elif [[ "$line" =~ \<artifactId\>(.*)\</artifactId\> ]]; then
         current_artifact="${BASH_REMATCH[1]}"
+        current_artifact=$(echo "$current_artifact" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        debug_log "Maven: artifactId = $current_artifact"
       elif [[ "$line" =~ \<version\>(.*)\</version\> ]]; then
         current_version="${BASH_REMATCH[1]}"
+        current_version=$(echo "$current_version" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
         
         # Resolver referências a propriedades: ${property.name}
         if [[ "$current_version" =~ \$\{([^}]+)\} ]]; then
           local prop_name="${BASH_REMATCH[1]}"
-          local prop_value=$(grep -oP "<$prop_name>\K[^<]+" "$pom_file" | head -1)
+          debug_log "Maven: Tentando resolver propriedade: $prop_name"
+          
+          # Procurar no próprio pom.xml na seção <properties>
+          local prop_value=$(grep -A100 "<properties>" "$pom_file" | grep -B100 "</properties>" | grep -oP "<$prop_name>\K[^<]+" | head -1)
           
           if [ -n "$prop_value" ]; then
             current_version="$prop_value"
+            debug_log "Maven: Propriedade $prop_name resolvida para: $current_version"
           else
             # Tentar resolver usando a função resolve_version_variable
             local resolved_version=$(resolve_version_variable "$current_version" "$project_dir" "$project_context")
             if [ -n "$resolved_version" ] && [ "$resolved_version" != "\${$prop_name}" ]; then
               current_version="$resolved_version"
+              debug_log "Maven: Variável resolvida via função: $current_version"
+            else
+              debug_log "Maven: Não foi possível resolver propriedade: $prop_name"
             fi
           fi
         fi
+        debug_log "Maven: version = $current_version"
       elif [[ "$line" =~ \<scope\>(.*)\</scope\> ]]; then
         current_scope="${BASH_REMATCH[1]}"
+        current_scope=$(echo "$current_scope" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        debug_log "Maven: scope = $current_scope"
+      elif [[ "$line" =~ \<type\>(.*)\</type\> ]]; then
+        current_type="${BASH_REMATCH[1]}"
+        current_type=$(echo "$current_type" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        debug_log "Maven: type = $current_type"
+      elif [[ "$line" =~ \<classifier\>(.*)\</classifier\> ]]; then
+        current_classifier="${BASH_REMATCH[1]}"
+        current_classifier=$(echo "$current_classifier" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+        debug_log "Maven: classifier = $current_classifier"
       # Fim de uma dependência, salvar se tiver os dados mínimos
       elif [[ "$line" =~ \</dependency\> ]]; then
         if [ -n "$current_group" ] && [ -n "$current_artifact" ]; then
@@ -748,12 +791,24 @@ parse_maven_dependencies() {
             current_version="managed"
           fi
           
-          echo "{\"group\":\"$current_group\",\"name\":\"$current_artifact\",\"version\":\"$current_version\",\"configuration\":\"$current_scope\"}"
+          # Criar identificação mais específica para dependências Maven com type e classifier
+          local dep_name="$current_artifact"
+          if [ -n "$current_type" ] && [ "$current_type" != "jar" ]; then
+            dep_name="$dep_name ($current_type)"
+          fi
+          if [ -n "$current_classifier" ]; then
+            dep_name="$dep_name:$current_classifier"
+          fi
+          
+          debug_log "Maven: Salvando dependência: $current_group:$dep_name:$current_version:$current_scope"
+          echo "{\"group\":\"$current_group\",\"name\":\"$dep_name\",\"version\":\"$current_version\",\"configuration\":\"$current_scope\"}"
         fi
         continue
       fi
     fi
   done < "$pom_file"
+  
+  debug_log "Análise Maven concluída para: $pom_file"
 }
 
 # Extrair todas as propriedades do gradle.properties

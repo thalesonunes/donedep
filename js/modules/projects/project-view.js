@@ -367,6 +367,7 @@ class ProjectView {
             if (activeFilters.java) activeFilterLabels.push(`Java: ${activeFilters.java}`);
             if (activeFilters.kotlin) activeFilterLabels.push(`Kotlin: ${activeFilters.kotlin}`);
             if (activeFilters.gradle) activeFilterLabels.push(`Gradle: ${activeFilters.gradle}`);
+            if (activeFilters.maven) activeFilterLabels.push(`Maven: ${activeFilters.maven}`);
             if (activeFilters.spring_boot) activeFilterLabels.push(`Spring Boot: ${activeFilters.spring_boot}`);
             
             // Custom message based on active filters

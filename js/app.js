@@ -71,7 +71,7 @@ function setupEventListeners() {
   });
 
   // Filter dropdowns
-  ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+  ['java', 'kotlin', 'gradle', 'maven', 'spring'].forEach(type => {
     const dropdown = document.getElementById('filter-' + type);
     if (dropdown) {
       dropdown.addEventListener('change', (e) => {
@@ -87,7 +87,7 @@ function clearAllFilters() {
   
   window._activeFilters = window.FilterModel.createEmptyFilters();
   
-  ['java', 'kotlin', 'gradle', 'spring'].forEach(type => {
+  ['java', 'kotlin', 'gradle', 'maven', 'spring'].forEach(type => {
     const dropdown = document.getElementById('filter-' + type);
     if (dropdown) {
       dropdown.value = '';

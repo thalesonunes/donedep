@@ -104,15 +104,17 @@ analyze_project() {
   
   local kotlin_version=$(extract_kotlin_version "$project_dir" 2>/dev/null)
   local gradle_version=$(extract_gradle_version "$project_dir" 2>/dev/null)
+  local maven_version=$(extract_maven_version "$project_dir" 2>/dev/null)
   local spring_boot_version=$(extract_spring_boot_version "$project_dir" 2>/dev/null)
   
   # Criar contexto do projeto como JSON para resolver variáveis
   local project_context="{}"
-  if [ -n "$java_version" ] || [ -n "$kotlin_version" ] || [ -n "$gradle_version" ] || [ -n "$spring_boot_version" ]; then
+  if [ -n "$java_version" ] || [ -n "$kotlin_version" ] || [ -n "$gradle_version" ] || [ -n "$maven_version" ] || [ -n "$spring_boot_version" ]; then
     project_context="{"
     [ -n "$java_version" ] && project_context="$project_context\"javaVersion\":\"$java_version\","
     [ -n "$kotlin_version" ] && project_context="$project_context\"kotlinVersion\":\"$kotlin_version\","
     [ -n "$gradle_version" ] && project_context="$project_context\"gradleVersion\":\"$gradle_version\","
+    [ -n "$maven_version" ] && project_context="$project_context\"mavenVersion\":\"$maven_version\","
     [ -n "$spring_boot_version" ] && project_context="$project_context\"springBootVersion\":\"$spring_boot_version\""
     project_context="${project_context%,}" # remover última vírgula se existir
     project_context="$project_context}"
@@ -181,6 +183,10 @@ analyze_project() {
   
   if [ -n "$gradle_version" ]; then
     project_json="$project_json,\"gradleVersion\":\"$gradle_version\""
+  fi
+  
+  if [ -n "$maven_version" ]; then
+    project_json="$project_json,\"mavenVersion\":\"$maven_version\""
   fi
   
   if [ -n "$spring_boot_version" ]; then

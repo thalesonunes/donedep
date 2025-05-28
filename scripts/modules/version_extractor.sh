@@ -562,3 +562,71 @@ extract_spring_boot_version() {
   
   echo "$spring_boot_version"
 }
+
+# Extrair versão do Maven
+extract_maven_version() {
+  local project_dir="$1"
+  local maven_version=""
+  
+  # Procurar no pom.xml pelo elemento <maven.version> ou plugin maven
+  if [ -f "$project_dir/pom.xml" ]; then
+    # Tentar extrair versão do Maven definida explicitamente
+    if grep -q "<maven.version>" "$project_dir/pom.xml"; then
+      maven_version=$(grep -oP "<maven.version>\K[^<]+" "$project_dir/pom.xml" | head -1)
+      debug_log "Versão Maven encontrada na propriedade maven.version: $maven_version"
+    fi
+    
+    # Se não encontrou, tentar no plugin maven-compiler-plugin
+    if [ -z "$maven_version" ] && grep -q "maven-compiler-plugin" "$project_dir/pom.xml"; then
+      maven_version=$(grep -A10 -B5 "maven-compiler-plugin" "$project_dir/pom.xml" | grep -oP "<version>\K[0-9]+\.[0-9]+(\.[0-9]+)?" | head -1)
+      if [ -n "$maven_version" ]; then
+        debug_log "Versão Maven inferida do maven-compiler-plugin: $maven_version"
+      fi
+    fi
+    
+    # Se não encontrou, tentar no maven-surefire-plugin
+    if [ -z "$maven_version" ] && grep -q "maven-surefire-plugin" "$project_dir/pom.xml"; then
+      maven_version=$(grep -A10 -B5 "maven-surefire-plugin" "$project_dir/pom.xml" | grep -oP "<version>\K[0-9]+\.[0-9]+(\.[0-9]+)?" | head -1)
+      if [ -n "$maven_version" ]; then
+        debug_log "Versão Maven inferida do maven-surefire-plugin: $maven_version"
+      fi
+    fi
+    
+    # Se ainda não encontrou, usar versão padrão detectada pela estrutura
+    if [ -z "$maven_version" ]; then
+      # Verificar se existe wrapper Maven
+      if [ -f "$project_dir/.mvn/wrapper/maven-wrapper.properties" ]; then
+        maven_version=$(grep -oP "distributionUrl=.*apache-maven-\K[0-9]+\.[0-9]+(\.[0-9]+)?" "$project_dir/.mvn/wrapper/maven-wrapper.properties" | head -1)
+        if [ -n "$maven_version" ]; then
+          debug_log "Versão Maven encontrada no wrapper: $maven_version"
+        fi
+      fi
+    fi
+    
+    # Se ainda não encontrou, tentar usar comando mvn se disponível
+    if [ -z "$maven_version" ] && command -v mvn &> /dev/null; then
+      # Navegar para o diretório do projeto para verificar a versão
+      if cd "$project_dir" 2>/dev/null; then
+        maven_version=$(mvn --version 2>/dev/null | grep "Apache Maven" | grep -oP "Apache Maven \K[0-9]+\.[0-9]+(\.[0-9]+)?" | head -1)
+        if [ -n "$maven_version" ]; then
+          debug_log "Versão Maven detectada pelo comando mvn: $maven_version"
+        fi
+        cd - > /dev/null
+      fi
+    fi
+    
+    # Se ainda não encontrou, marcar como detectado pelo pom.xml
+    if [ -z "$maven_version" ]; then
+      maven_version="detected"
+      debug_log "Projeto Maven detectado mas versão não identificada: $maven_version"
+    fi
+  fi
+  
+  # Se não encontrou nenhuma versão, retornar "NENHUM"
+  if [ -z "$maven_version" ]; then
+    debug_log "Nenhuma versão Maven encontrada para: $project_dir, retornando NENHUM"
+    maven_version="NENHUM"
+  fi
+  
+  echo "$maven_version"
+}

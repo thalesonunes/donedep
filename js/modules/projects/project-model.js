@@ -130,7 +130,7 @@ function getFilteredProjects(searchTerm = '') {
         for (const [filterType, filterValue] of Object.entries(activeFilters)) {
           if (filterValue) { 
             const projectRequirement = project.requirements[filterType];
-            if ((filterType === 'kotlin' || filterType === 'java' || filterType === 'spring_boot') && filterValue === window.Config.FILTERS.NONE_LABEL) {
+            if ((filterType === 'kotlin' || filterType === 'java' || filterType === 'gradle' || filterType === 'maven' || filterType === 'spring_boot') && filterValue === window.Config.FILTERS.NONE_LABEL) {
               if (projectRequirement !== 'NENHUM' && 
                   projectRequirement !== null && 
                   typeof projectRequirement !== 'undefined') {
@@ -230,6 +230,7 @@ class ProjectModel {
             java: project.javaVersion || null, 
             kotlin: project.kotlinVersion || null, 
             gradle: project.gradleVersion || null, 
+            maven: project.mavenVersion || null,
             spring_boot: project.springBootVersion || null 
           };
         }
@@ -272,6 +273,16 @@ class ProjectModel {
                     projectRequirement !== null && 
                     typeof projectRequirement !== 'undefined') {
                   console.log(`Projeto ${project.project} não passa no filtro NONE para gradle`);
+                  passesFilters = false;
+                  break;
+                }
+              } 
+              // Caso especial para maven "NENHUM"
+              else if (filterType === 'maven' && filterValue === window.Config.FILTERS.NONE_LABEL) { 
+                if (projectRequirement !== 'NENHUM' && 
+                    projectRequirement !== null && 
+                    typeof projectRequirement !== 'undefined') {
+                  console.log(`Projeto ${project.project} não passa no filtro NONE para maven`);
                   passesFilters = false;
                   break;
                 }

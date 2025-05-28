@@ -59,6 +59,7 @@ function transformProjectData(project) {
             project: project.project || "Projeto sem nome",
             kotlinVersion: project.kotlinVersion || null,
             gradleVersion: project.gradleVersion || null,
+            mavenVersion: project.mavenVersion || null,
             springBootVersion: project.springBootVersion || null,
             javaVersion: project.javaVersion || null,
             ...project
@@ -69,6 +70,7 @@ function transformProjectData(project) {
             java: validProject.javaVersion || null,
             kotlin: validProject.kotlinVersion || null,
             gradle: validProject.gradleVersion || null,
+            maven: validProject.mavenVersion || null,
             spring_boot: validProject.springBootVersion || null
         };
         

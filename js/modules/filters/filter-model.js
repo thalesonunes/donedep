@@ -11,6 +11,7 @@ if (typeof window._activeFilters === 'undefined') {
     java: null,
     kotlin: null,
     gradle: null,
+    maven: null,
     spring_boot: null
   };
 }
@@ -48,7 +49,7 @@ function initializeFilterModel(projects) {
 function updateFilter(filterKey, value) {
   const actualKey = filterKey === 'spring' ? 'spring_boot' : filterKey;
   
-  if (!['java', 'kotlin', 'gradle', 'spring_boot'].includes(actualKey)) {
+  if (!['java', 'kotlin', 'gradle', 'maven', 'spring_boot'].includes(actualKey)) {
     window.logError({
       message: `Chave de filtro inválida: ${filterKey}`,
       type: window.ErrorType.VALIDATION,
@@ -90,6 +91,12 @@ function validateFilterCombination() {
           return false;
         }
       } else if (key === 'gradle' && value === window.Config.FILTERS.NONE_LABEL) {
+        if (project.requirements[key] !== 'NENHUM' && 
+            project.requirements[key] !== null && 
+            project.requirements[key] !== undefined) {
+          return false;
+        }
+      } else if (key === 'maven' && value === window.Config.FILTERS.NONE_LABEL) {
         if (project.requirements[key] !== 'NENHUM' && 
             project.requirements[key] !== null && 
             project.requirements[key] !== undefined) {
@@ -162,6 +169,10 @@ function getCompatibleOptions(filterToUpdate, currentSelections = window._active
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
           );
+        } else if (key === 'maven' && value === window.Config.FILTERS.NONE_LABEL) {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
         } else if (key === 'spring_boot' && value === window.Config.FILTERS.NONE_LABEL) {
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && (p.requirements[key] === null || p.requirements[key] === undefined || p.requirements[key] === "NENHUM")
@@ -200,6 +211,7 @@ function resetFilters() {
     java: null,
     kotlin: null,
     gradle: null,
+    maven: null,
     spring_boot: null
   };
 }
@@ -222,6 +234,7 @@ function getActiveFilterLabels() {
   if (currentFilters.java) labels.push(`Java: ${currentFilters.java}`);
   if (currentFilters.kotlin) labels.push(`Kotlin: ${currentFilters.kotlin}`);
   if (currentFilters.gradle) labels.push(`Gradle: ${currentFilters.gradle}`);
+  if (currentFilters.maven) labels.push(`Maven: ${currentFilters.maven}`);
   if (currentFilters.spring_boot) labels.push(`Spring Boot: ${currentFilters.spring_boot}`);
   
   return labels;
@@ -251,7 +264,7 @@ function debugFilterRelationships() {
   projects.forEach(p => {
     try {
       if (p && p.requirements) {
-        console.log(`Projeto: ${p.project || 'Sem nome'}, Java: ${p.requirements.java || 'N/A'}, Gradle: ${p.requirements.gradle || 'N/A'}, Kotlin: ${p.requirements.kotlin || 'N/A'}, Spring: ${p.requirements.spring_boot || 'N/A'}`);
+        console.log(`Projeto: ${p.project || 'Sem nome'}, Java: ${p.requirements.java || 'N/A'}, Gradle: ${p.requirements.gradle || 'N/A'}, Maven: ${p.requirements.maven || 'N/A'}, Kotlin: ${p.requirements.kotlin || 'N/A'}, Spring: ${p.requirements.spring_boot || 'N/A'}`);
       } else if (p) {
         console.log(`Projeto: ${p.project || 'Sem nome'}, sem requisitos definidos`);
       } else {
@@ -271,6 +284,15 @@ function debugFilterRelationships() {
     );
     const gradleVersions = window.FilterUtils.getUnique(filtered, 'gradle');
     console.log(`Java ${javaVersion}: Gradle ${gradleVersions.join(', ')}`);
+  });
+  
+  console.log("%cVersões de Maven por versão de Java:", "font-weight:bold");
+  javaVersions.forEach(javaVersion => {
+    const filtered = projects.filter(
+      p => p.requirements && p.requirements.java === javaVersion
+    );
+    const mavenVersions = window.FilterUtils.getUnique(filtered, 'maven');
+    console.log(`Java ${javaVersion}: Maven ${mavenVersions.join(', ')}`);
   });
   
   console.log("%cVersões de Spring Boot por versão de Java:", "font-weight:bold");
@@ -308,6 +330,7 @@ function diagnoseFilters() {
     const javaVersions = new Set();
     const kotlinVersions = new Set();
     const gradleVersions = new Set();
+    const mavenVersions = new Set();
     const springVersions = new Set();
     
     window._allProjects.forEach(project => {
@@ -315,6 +338,7 @@ function diagnoseFilters() {
         if (project.requirements.java) javaVersions.add(project.requirements.java);
         if (project.requirements.kotlin) kotlinVersions.add(project.requirements.kotlin);
         if (project.requirements.gradle) gradleVersions.add(project.requirements.gradle);
+        if (project.requirements.maven) mavenVersions.add(project.requirements.maven);
         if (project.requirements.spring_boot) springVersions.add(project.requirements.spring_boot);
       }
     });
@@ -322,6 +346,7 @@ function diagnoseFilters() {
     console.log('Versões de Java disponíveis:', Array.from(javaVersions));
     console.log('Versões de Kotlin disponíveis:', Array.from(kotlinVersions));
     console.log('Versões de Gradle disponíveis:', Array.from(gradleVersions));
+    console.log('Versões de Maven disponíveis:', Array.from(mavenVersions));
     console.log('Versões de Spring Boot disponíveis:', Array.from(springVersions));
   }
   
@@ -353,6 +378,7 @@ class FilterModel {
       java: null,
       kotlin: null,
       gradle: null,
+      maven: null,
       spring_boot: null
     };
   }
@@ -371,6 +397,10 @@ class FilterModel {
             p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
           );
         } else if (key === 'gradle' && value === 'Nenhum') {
+          filteredProjects = filteredProjects.filter(p => 
+            p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
+          );
+        } else if (key === 'maven' && value === 'Nenhum') {
           filteredProjects = filteredProjects.filter(p => 
             p && p.requirements && (p.requirements[key] === 'NENHUM' || p.requirements[key] === null || p.requirements[key] === undefined)
           );
@@ -411,6 +441,13 @@ class FilterModel {
               return false;
             }
           } else if (filterType === 'gradle' && filterValue === 'Nenhum') {
+            if (project.requirements && 
+                project.requirements[filterType] !== 'NENHUM' && 
+                project.requirements[filterType] !== null && 
+                project.requirements[filterType] !== undefined) {
+              return false;
+            }
+          } else if (filterType === 'maven' && filterValue === 'Nenhum') {
             if (project.requirements && 
                 project.requirements[filterType] !== 'NENHUM' && 
                 project.requirements[filterType] !== null && 
